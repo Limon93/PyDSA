@@ -26,6 +26,8 @@ from tkMessageBox import *
 
 NUMPYenabled = True         # If NUMPY installed, then the FFT calculations is 4x faster than the own FFT calculation
 
+scope = None  # VISA scope session
+
 # Values that can be modified
 GRWN = 1024                  # Width of the grid
 GRHN = 512                  # Height of the grid
@@ -76,7 +78,7 @@ Buttonwidth2 = 8
 
 # Initialisation of general variables
 STARTfrequency = 0.0        # Startfrequency
-STOPfrequency = 10000000.0     # Stopfrequency
+STOPfrequency = 2000000.0     # Stopfrequency
 
 SNenabled= False            # If Signal to Noise is enabled in the software
 CENTERsignalfreq = 1000     # Center signal frequency of signal bandwidth for S/N measurement
@@ -517,8 +519,45 @@ def BDBdiv2():
 
 
 
+def channelsEnabled(scope):
+    c1 = int(scope.query('CHAN1:DISP?'))
+    c2 = int(scope.query('CHAN2:DISP?'))
+    c3 = int(scope.query('CHAN3:DISP?'))
+    c4 = int(scope.query('CHAN3:DISP?'))
+    print ("enabled channel count: ", c1+c2+c3+c4)
+    return c1+c2+c3+c4 
 
+def longSweepMdep(channelCount):
+    if channelCount <= 1: 
+        return 1200000
+#        return 24000000
+    elif channelCount == 2:
+#        return 12000000
+        return 6000000
+    else:
+#        return 6000000
+        return 3000000
+    
 # ============================================ Main routine ====================================================
+
+
+def getWavData(scope, sampleLength):
+    curStart = 1
+    maxChunk = 250000
+    signals = list()
+    while curStart <= sampleLength:
+        cmd = ":WAV:STAR " + str(curStart)
+#        print cmd    
+        scope.write(cmd)
+        end = curStart + maxChunk -1
+        if end > sampleLength:
+            end = sampleLength
+        cmd = ":WAV:STOP " + str(end)
+#        print cmd    
+        scope.write(cmd)
+        signals += scope.query_binary_values(":WAV:DATA?", datatype='B') #do this first
+        curStart = end + 1
+    return signals
 
 def Sweep():   # Read samples and store the data into the arrays
     global X0L          # Left top X value
@@ -541,6 +580,7 @@ def Sweep():   # Read samples and store the data into the arrays
     global COLORyellow
     global COLORgreen
     global COLORmagenta
+    global scope
 
     while (True):                                           # Main loop
 
@@ -551,7 +591,6 @@ def Sweep():   # Read samples and store the data into the arrays
                 UPDATEspeed = 1.0
 
             TRACESopened = 1
-
             try:
 # Get the USB device, e.g. 'USB0::0x1AB1::0x0588::DS1ED141904883'
 # pyVisa 1.6  compatibilty
@@ -565,26 +604,40 @@ def Sweep():   # Read samples and store the data into the arrays
                     sys.exit(-1)
                 print usb
 # pyVisa 1.6  compatibilty
-#                scope = visa.instrument(usb[0], timeout=20, chunk_size=1024000) # bigger timeout for long mem
-#                scope = rm.open_resource(usb[0], timeout=20, chunk_size=1024000) # bigger timeout for long mem
-                scope = rm.open_resource(usb[0], timeout=10000, chunk_size=1024000) 
+                instr = usb[0] 
+#                instr = 'TCPIP0::10.96.0.240::INSTR'
 
+                scope = rm.open_resource(instr, timeout=10000, chunk_size=1024000)
+                sleep(0.2) 
+                scope.write(":RUN")
+                scope.write(":WAV:SOUR CHAN1")
+                scope.write(":WAV:FORM BYTE")
+                scope.write(":WAV:MODE RAW")
+                sleep(0.2)                     
+                if SAMPLEdepth == 0:
+                    print 'NORM'
+                    scope.write(':ACQ:MDEP 12000') # normal memory type
+                else:
+                    print 'LONG'
+                    scope.write(':ACQ:MDEP ' + str(longSweepMdep(channelsEnabled(scope)))) # long memory type
+                sleep(0.5)
+                print ('mem depth'+ scope.query(':ACQ:MDEP?'))
                 RUNstatus = 2
             except:                                         # If error in opening audio stream, show error
                 RUNstatus = 0
                 #txt = "Sample rate: " + str(SAMPLErate) + ", try a lower sample rate.\nOr another audio device."
                 showerror("VISA Error","Cannot open scope")
-
-# get metadata
-            sample_rate = float(scope.query(':ACQ:SRAT?'))
-            timescale = float(scope.query(":TIM:SCAL?"))
-            timeoffset = float(scope.query(":TIM:OFFS?"))
-            voltscale = float(scope.query(':CHAN1:SCAL?'))
-            voltoffset = float(scope.query(":CHAN1:OFFS?"))
-            scope.write(":ACQ:MDEP 12000000")
-            scope.write(":WAV:SOUR CHAN1")
-            scope.write(":WAV:FORM BYTE")
-            scope.write(":WAV:MODE RAW")
+    
+    # get metadata
+    #            sample_rate = float(scope.query(':ACQ:SRAT?'))
+    #            timescale = float(scope.query(":TIM:SCAL?"))
+    #            timeoffset = float(scope.query(":TIM:OFFS?"))
+    #            voltscale = float(scope.query(':CHAN1:SCAL?'))
+    #            voltoffset = float(scope.query(":CHAN1:OFFS?"))
+    #            scope.write(":ACQ:MDEP 12000000")
+    #            scope.write(":WAV:SOUR CHAN1")
+    #            scope.write(":WAV:FORM BYTE")
+    #            scope.write(":WAV:MODE RAW")
 
 
             UpdateScreen()                                  # UpdateScreen() call
@@ -592,16 +645,10 @@ def Sweep():   # Read samples and store the data into the arrays
 
         # RUNstatus = 2: Reading audio data from soundcard
         if (RUNstatus == 2):
+            
         # Grab the raw data from channel 1
             #try:
 # Set the scope the way we want it
-#PPM cnnopt set memory depth when stopped see below 
-#            if SAMPLEdepth == 0:
-#                print 'NORM'
-#                scope.write(':ACQ:MDEP 12000') # normal memory type
-#            else:
-#                print 'LONG'
-#                scope.write(':ACQ:MDEP 120000') # long memory type
             #scope.write(':CHAN1:COUP DC') # DC coupling
             #scope.write(':CHAN1:DISP ON') # Channel 1 on
             #scope.write(':CHAN2:DISP ON') # Channel 2 off
@@ -615,17 +662,8 @@ def Sweep():   # Read samples and store the data into the arrays
             #scope.write(':TRIG:EDGE:COUP AC') # trigger coupling
             #scope.write(':TRIG:EDGE:SLOP NEG') # Trigger on negative edge
             #scope.write(':TRIG:EDGE:LEV 0.01') # Trigger  volts
-            scope.write(":RUN")
-            sleep(0.1)
-#PPM  memory depth must be set when scope is running 
-            if SAMPLEdepth == 0:
-                print 'NORM'
-                scope.write(':ACQ:MDEP 12000') # normal memory type
-            else:
-                print 'LONG'
-                scope.write(':ACQ:MDEP 1200000') # long memory type
-            print ('mem depth: ', scope.query(':ACQ:MDEP?'))
-            sleep(0.1)
+#            sleep(0.1)
+#            print ('mem depth: ', scope.query(':ACQ:MDEP?'))
 #            scope.write(":TRIG:SWE SING")
 #            scope.write(":SINGLE")
 
@@ -642,35 +680,30 @@ def Sweep():   # Read samples and store the data into the arrays
 #                sleep(0.1)
             #sleep(0.1)
     # Grab the raw data from channel 1, which will take a few seconds for long buffer mode
-           # sleep(0.1)
-            # PPM memory depth cannot be set when the scope is stopped
-            scope.write(":STOP")
-            scope.write(":WAV:SOUR CHAN1")
-            scope.write(":WAV:FORM BYTE")
-            scope.write(":WAV:MODE RAW")
-            scope.write(":WAV:STAR 1")
-            scope.write(":WAV:STOP 250000")
-#            if SAMPLEdepth == 0:
-#                scope.write(":WAV:STOP 12000")
-#            else:
-
+            sleep(0.1)
+            
             txt = "->Acquire"
             x = X0L + 275
             y = Y0T+GRH+32
             IDtxt  = ca.create_text (x, y, text=txt, anchor=W, fill=COLORgreen)
             root.update()       # update screen
-
-
-            signals= scope.query_binary_values(":WAV:DATA?",datatype='b', data_points=250000)  #do this first
+            
+            
+            scope.write(":STOP")
+            memdepth = int(scope.query(':ACQ:MDEP?'))
+            l2md = int(math.log(memdepth,2)) # truncate the logarithm
+            samplelength = (1<<l2md) +1
+#            print ('mem depth'+ str(memdepth))
+#            print ('needed sample length'+ str(samplelength))
+            signals = getWavData(scope, samplelength)
             data_size = len(signals)
 
-#            SAMPLErate = scope.query_values(':ACQ:SRAT?')[0] #do this second
             SAMPLErate = float(scope.query(':ACQ:SRAT?')) #do this second
-            print 'Data size:', data_size , "Sample rate:", SAMPLErate
+#            print 'Data size:', data_size , "Sample rate:", SAMPLErate
+            scope.write(":RUN")
 
 
 
-            # sleep(0.1)
 
 # convert data from (inverted) bytes to an array of scaled floats
 # this magic from Matthew Mets
@@ -690,9 +723,13 @@ def Sweep():   # Read samples and store the data into the arrays
 
         # RUNstatus = 3: Stop
         # RUNstatus = 4: Stop and restart
-        if (RUNstatus == 3) or (RUNstatus == 4):
-            scope.write(":KEY:FOR")
+        if ((RUNstatus == 3) or (RUNstatus == 4)) and (scope != None) :
+            scope.write(":RUN")
+# not for DS1054Z            
+#            scope.write(":KEY:FOR") 
             scope.close()
+            scope = None
+            print " scope closed"
             if RUNstatus == 3:
                 RUNstatus = 0                               # Status is stopped
             if RUNstatus == 4:
@@ -753,8 +790,20 @@ def DoFFT():            # Fast Fourier transformation
 
 
     # No FFT if empty or too short array of audio samples
-    if len(SIGNAL1) >= 1048576: # ensure only valid buffer sizes
-        fftsamples = LONGfftsize # can set this to be less than buffer size to make it faster
+    if len(SIGNAL1) >= 1<<32: # ensure only valid buffer sizes
+        fftsamples = 1<<30 # can set this to be less than buffer size to make it faster
+    elif len(SIGNAL1) >= 1<<30: # ensure only valid buffer sizes
+        fftsamples = 1<<28 # can set this to be less than buffer size to make it faster
+    elif len(SIGNAL1) >= 1<<28: # ensure only valid buffer sizes
+        fftsamples = 1<<26 # can set this to be less than buffer size to make it faster
+    elif len(SIGNAL1) >= 1<<26: # ensure only valid buffer sizes
+        fftsamples = 1<<24 # can set this to be less than buffer size to make it faster
+    elif len(SIGNAL1) >= 1<<24: # ensure only valid buffer sizes
+        fftsamples = 1<<22 # can set this to be less than buffer size to make it faster
+    elif len(SIGNAL1) >= 1<<22: # ensure only valid buffer sizes
+        fftsamples = 1<<20 # can set this to be less than buffer size to make it faster
+    elif len(SIGNAL1) >= 1<<20: # ensure only valid buffer sizes
+        fftsamples = 1<<18 # can set this to be less than buffer size to make it faster
     elif len(SIGNAL1) >= 131072: # ensure only valid buffer sizes
         fftsamples = 131072
     elif len(SIGNAL1) >= 65536: # ensure only valid buffer sizes
@@ -767,7 +816,7 @@ def DoFFT():            # Fast Fourier transformation
         fftsamples = 8192
     else:
         return  # not a valid buffer size
-    print "Buffersize:" + str(len(SIGNAL1)) + " FFTsize: " + str(fftsamples)
+#    print "Buffersize:" + str(len(SIGNAL1)) + " FFTsize: " + str(fftsamples)
     SAMPLEsize= fftsamples
 
     n = 0
