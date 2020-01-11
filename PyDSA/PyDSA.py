@@ -7,7 +7,10 @@
 # modified to capture samples from Rigol DS1102E scope for a basic 100Mhz SA
 #
 # This version slightly has a modified Sweep() routine for the DS1054Z by Kerr Smith Jan 31 2016
-#
+# 
+# 2020-01-11  Piotr Mis SP9MUF 
+# adapted to pyvisa 1.10.1 + modifications to have a bit longer sample
+ 
 import math
 import time
 import numpy
