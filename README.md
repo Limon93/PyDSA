@@ -35,5 +35,5 @@ Installation instructions for Linux (CentOS 7) (2020-01-10):
     
     
        
-Original README.md by rheslip is under ORIGREAME.md
+Original README.md by rheslip is in ORIGREADME.md
 
