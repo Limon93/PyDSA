@@ -22,7 +22,7 @@ Installation instructions for Linux (CentOS 7) (2020-01-10):
     Verify installation:
      Try out NI VISA interactive control: NIvisaic. IF you plugged in your scope then it should be visible 
      for DS1054Z the line reads 
-      USB0::0x14AB1::0x04CE::DSZA<serialnumberhere>::INSTR
+      USB0::0x14AB1::0x04CE::DSZAserialnumberhere::INSTR
          
 
 2. Getting USB scope to work with NI-VISA:
