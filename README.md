@@ -1,6 +1,8 @@
 DS1054Z specific version of Spectrum Analyzer for the Rigol DS1000 series digital scopes
 
-Changes to rheslips version: 
+First and foremost many thanks to rheslip for the original work.
+
+Changes to rheslip's version: 
 
 1. PyVISA version 1.10.1
 2. Tested under Linux (CentOS 7).
@@ -22,10 +24,10 @@ Installation instructions for Linux (CentOS 7) (2020-01-10):
     Verify installation:
      Try out NI VISA interactive control: NIvisaic. IF you plugged in your scope then it should be visible 
      for DS1054Z the line reads 
-      USB0::0x14AB1::0x04CE::DSZAserialnumberhere::INSTR
+      USB0::0x14AB1::0x04CE::serialnumberhere::INSTR
          
 
-2. Getting USB scope to work with NI-VISA:
+2. Getting USB scope to work with NI-VISA under Linux:
      If in the NI-VISA Intercative Control your scope appears under unknown not under USB Instruments 
      then you need (probably, I did) to make sure the Linux usbtmc driver does not grab the scope. 
      Either remove the module after plugging in the cope manually: rmmod usbtmc  
