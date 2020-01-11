@@ -4,14 +4,16 @@
 # Created by Onno Hoekstra (pa2ohh)
 #
 # 17/9/15 Rich Heslip VE3MKC
-# modified to capture samples from Rigo DS1102E scope for a basic 100Mhz SA
+# modified to capture samples from Rigol DS1102E scope for a basic 100Mhz SA
+#
+# This version slightly has a modified Sweep() routine for the DS1054Z by Kerr Smith Jan 31 2016
 #
 import math
 import time
 import numpy
 import tkFont
 import sys
-import visa
+import pyvisa
 from time import sleep
 from Tkinter import *
 from tkFileDialog import askopenfilename
@@ -31,7 +33,7 @@ Vdiv = 8                    # Number of vertical divisions
 
 TRACEmode = 1               # 1 normal mode, 2 max hold, 3 average
 TRACEaverage = 10           # Number of average sweeps for average mode
-TRACEreset = True           # True for first new trace, reset max hold and averageing 
+TRACEreset = True           # True for first new trace, reset max hold and averageing
 SWEEPsingle = False         # flag to sweep once
 
 SAMPLErate = 1000000        # scope sample rate, read from scope when we read the buffer
@@ -39,7 +41,7 @@ SAMPLEsize = 16384          # default sample size
 SAMPLEdepth = 0             # 0 normal, 1 long
 UPDATEspeed = 1.1           # Update speed can be increased when problems if PC too slow, default 1.1
 ZEROpadding = 0             # ZEROpadding for signal interpolation between frequency samples (0=none)
-                            
+
 DBdivlist = [1, 2, 3, 5, 10, 20] # dB per division
 DBdivindex = 5              # 20 dB/div as initial value
 
@@ -47,7 +49,7 @@ DBlevel = 0                 # Reference level
 
 LONGfftsize = 262144        # FFT to do on long buffer. larger FFT takes more time
 fftsamples = 16384           # size of FFT we are using - recalculated in DoFFT()
- 
+
 # Colors that can be modified
 COLORframes = "#000080"     # Color = "#rrggbb" rr=red gg=green bb=blue, Hexadecimal values 00 - ff
 COLORcanvas = "#000000"
@@ -82,7 +84,7 @@ SNmeasurement = True       # True for signal to noise measurement between signal
 SNresult = 0.0              # Result of signal to noise measurement
 SNwidth = 0
 
-                            
+
 # Other global variables required in various routines
 GRW = GRWN                  # Initialize GRW
 GRH = GRHN                  # Initialize GRH
@@ -133,24 +135,24 @@ def on_click(self, event):
 def Bmarker1(event):
     global Marker1x
     global Marker1y
-    
+
     Marker1x=event.x
     Marker1y=event.y
 
 def Bmarker2(event):
     global Marker2x
     global Marker2y
-    
+
     Marker2x=event.x
     Marker2y=event.y
     #print "button 2 clicked at", event.x, event.y
-    
+
 def BNormalmode():
     global TRACEmode
 
     TRACEmode = 1
     UpdateScreen()          # Always Update
-    
+
 
 def BMaxholdmode():
     global TRACEmode
@@ -159,7 +161,7 @@ def BMaxholdmode():
     TRACEreset = True       # Reset trace peak and trace average
     TRACEmode = 2
     UpdateScreen()          # Always Update
-    
+
 
 def BAveragemode():
     global TRACEmode
@@ -170,7 +172,7 @@ def BAveragemode():
     #if (RUNstatus != 0):
     #    showwarning("WARNING","Stop sweep first")
     #    return()
-    
+
     TRACEreset = True       # Reset trace peak and trace average
     TRACEmode = 3
 
@@ -196,7 +198,7 @@ def BAveragemode():
 def BFFTwindow():
     global FFTwindow
     global TRACEreset
-    
+
     FFTwindow = FFTwindow + 1
     if FFTwindow > 6:
         FFTwindow = 0
@@ -211,7 +213,7 @@ def BSampledepth():
     if (RUNstatus != 0):
         showwarning("WARNING","Stop sweep first")
         return()
-    
+
     if SAMPLEdepth == 0:
         SAMPLEdepth = 1
     else:
@@ -235,21 +237,21 @@ def BSTOREtrace():
 def BSINGLEsweep():
     global SWEEPsingle
     global RUNstatus
-    
+
     if (RUNstatus != 0):
         showwarning("WARNING","Stop sweep first")
         return()
     else:
         SWEEPsingle = True
         RUNstatus = 1       # we are stopped, start
-    UpdateScreen()          # Always Update    
+    UpdateScreen()          # Always Update
 
 def BSNmode():
     global RUNstatus
     global SNmeasurement
     global SNresult
     global SNwidth
-    
+
     if SNwidth == 0:
         SNwidth = 1
         SNmeasurement = True
@@ -336,7 +338,7 @@ def BSNfstep2():
 
 def BStart():
     global RUNstatus
-    
+
     if (RUNstatus == 0):
         RUNstatus = 1
     UpdateScreen()          # Always Update
@@ -347,7 +349,7 @@ def Blevel1():
     global DBlevel
 
     DBlevel = DBlevel - 1
-    
+
     if RUNstatus == 0:      # Update if stopped
         UpdateTrace()
 
@@ -357,7 +359,7 @@ def Blevel2():
     global DBlevel
 
     DBlevel = DBlevel + 1
-    
+
     if RUNstatus == 0:      # Update if stopped
         UpdateTrace()
 
@@ -367,7 +369,7 @@ def Blevel3():
     global DBlevel
 
     DBlevel = DBlevel - 10
-    
+
     if RUNstatus == 0:      # Update if stopped
         UpdateTrace()
 
@@ -377,14 +379,14 @@ def Blevel4():
     global DBlevel
 
     DBlevel = DBlevel + 10
-    
+
     if RUNstatus == 0:      # Update if stopped
         UpdateTrace()
 
 
 def BStop():
     global RUNstatus
-    
+
     if (RUNstatus == 1):
         RUNstatus = 0
     elif (RUNstatus == 2):
@@ -403,11 +405,11 @@ def BSetup():
     global SIGNAL1
     global T1line
     global TRACEreset
-    
+
     #if (RUNstatus != 0):
    #    showwarning("WARNING","Stop sweep first")
-    #    return()    
- 
+    #    return()
+
     s = askstring("Zero padding","For better interpolation of levels between frequency samples.\nIncreases processing time!\n\nValue: " + str(ZEROpadding) + "\n\nNew value:\n(0-5, 0 is no zero padding)")
 
     if (s == None):         # If Cancel pressed, then None
@@ -437,9 +439,9 @@ def BStartfrequency():
     # if (RUNstatus != 0):
     #    showwarning("WARNING","Stop sweep first")
     #    return()
-    
+
     s = askstring("Startfrequency: ","Value: " + str(STARTfrequency) + " Hz\n\nNew value:\n")
-    
+
     if (s == None):         # If Cancel pressed, then None
         return()
 
@@ -462,7 +464,7 @@ def BStopfrequency():
     global STARTfrequency
     global STOPfrequency
     global RUNstatus
-    
+
     # if (RUNstatus != 0):
     #    showwarning("WARNING","Stop sweep first")
     #    return()
@@ -482,7 +484,7 @@ def BStopfrequency():
 
     if STOPfrequency < 10:  # Minimum stopfrequency 10 Hz
         STOPfrequency = 10
-        
+
     if STARTfrequency >= STOPfrequency:
         STARTfrequency = STOPfrequency - 1
 
@@ -493,7 +495,7 @@ def BStopfrequency():
 def BDBdiv1():
     global DBdivindex
     global RUNstatus
-    
+
     if (DBdivindex >= 1):
         DBdivindex = DBdivindex - 1
     if RUNstatus == 0:      # Update if stopped
@@ -504,7 +506,7 @@ def BDBdiv2():
     global DBdivindex
     global DBdivlist
     global RUNstatus
-    
+
     if (DBdivindex < len(DBdivlist) - 1):
         DBdivindex = DBdivindex + 1
     if RUNstatus == 0:      # Update if stopped
@@ -514,7 +516,7 @@ def BDBdiv2():
 
 
 # ============================================ Main routine ====================================================
-    
+
 def Sweep():   # Read samples and store the data into the arrays
     global X0L          # Left top X value
     global Y0T          # Left top Y value
@@ -531,12 +533,12 @@ def Sweep():   # Read samples and store the data into the arrays
     global UPDATEspeed
     global STARTfrequency
     global STOPfrequency
-    global COLORred    
+    global COLORred
     global COLORcanvas
     global COLORyellow
     global COLORgreen
     global COLORmagenta
-    
+
     while (True):                                           # Main loop
 
 
@@ -549,12 +551,20 @@ def Sweep():   # Read samples and store the data into the arrays
 
             try:
 # Get the USB device, e.g. 'USB0::0x1AB1::0x0588::DS1ED141904883'
-                instruments = visa.get_instruments_list()
+# pyVisa 1.6  compatibilty
+#                instruments = visa.get_instruments_list()
+                rm = pyvisa.ResourceManager()
+                instruments = rm.list_resources()
+
                 usb = filter(lambda x: 'USB' in x, instruments)
                 if len(usb) != 1:
                     print 'Bad instrument list', instruments
                     sys.exit(-1)
-                scope = visa.instrument(usb[0], timeout=20, chunk_size=1024000) # bigger timeout for long mem
+                print usb
+# pyVisa 1.6  compatibilty
+#                scope = visa.instrument(usb[0], timeout=20, chunk_size=1024000) # bigger timeout for long mem
+#                scope = rm.open_resource(usb[0], timeout=20, chunk_size=1024000) # bigger timeout for long mem
+                scope = rm.open_resource(usb[0], timeout=10000, chunk_size=1024000) 
 
                 RUNstatus = 2
             except:                                         # If error in opening audio stream, show error
@@ -563,24 +573,32 @@ def Sweep():   # Read samples and store the data into the arrays
                 showerror("VISA Error","Cannot open scope")
 
 # get metadata
-            #sample_rate = float(scope.ask(':ACQ:SAMP?'))
-            #timescale = float(scope.ask(":TIM:SCAL?"))
-            #timeoffset = float(scope.ask(":TIM:OFFS?"))
-            #voltscale = float(scope.ask(':CHAN1:SCAL?'))
-            #voltoffset = float(scope.ask(":CHAN1:OFFS?"))
-                
-            UpdateScreen()                                  # UpdateScreen() call        
+            sample_rate = float(scope.query(':ACQ:SRAT?'))
+            timescale = float(scope.query(":TIM:SCAL?"))
+            timeoffset = float(scope.query(":TIM:OFFS?"))
+            voltscale = float(scope.query(':CHAN1:SCAL?'))
+            voltoffset = float(scope.query(":CHAN1:OFFS?"))
+            scope.write(":ACQ:MDEP 12000000")
+            scope.write(":WAV:SOUR CHAN1")
+            scope.write(":WAV:FORM BYTE")
+            scope.write(":WAV:MODE RAW")
 
-            
+
+            UpdateScreen()                                  # UpdateScreen() call
+
+
         # RUNstatus = 2: Reading audio data from soundcard
         if (RUNstatus == 2):
         # Grab the raw data from channel 1
             #try:
 # Set the scope the way we want it
-            if SAMPLEdepth == 0:
-                scope.write(':ACQ:MEMD NORM') # Long memory type
-            else:
-                scope.write(':ACQ:MEMD LONG') # normal memory type
+#PPM cnnopt set memory depth when stopped see below 
+#            if SAMPLEdepth == 0:
+#                print 'NORM'
+#                scope.write(':ACQ:MDEP 12000') # normal memory type
+#            else:
+#                print 'LONG'
+#                scope.write(':ACQ:MDEP 120000') # long memory type
             #scope.write(':CHAN1:COUP DC') # DC coupling
             #scope.write(':CHAN1:DISP ON') # Channel 1 on
             #scope.write(':CHAN2:DISP ON') # Channel 2 off
@@ -595,66 +613,91 @@ def Sweep():   # Read samples and store the data into the arrays
             #scope.write(':TRIG:EDGE:SLOP NEG') # Trigger on negative edge
             #scope.write(':TRIG:EDGE:LEV 0.01') # Trigger  volts
             scope.write(":RUN")
-            
+            sleep(0.1)
+#PPM  memory depth must be set when scope is running 
+            if SAMPLEdepth == 0:
+                print 'NORM'
+                scope.write(':ACQ:MDEP 12000') # normal memory type
+            else:
+                print 'LONG'
+                scope.write(':ACQ:MDEP 1200000') # long memory type
+            print ('mem depth: ', scope.query(':ACQ:MDEP?'))
+            sleep(0.1)
+#            scope.write(":TRIG:SWE SING")
+#            scope.write(":SINGLE")
+
             #txt = "Trig"
             #x = X0L + 250
             #y = Y0T+GRH+32
             #IDtxt  = ca.create_text (x, y, text=txt, anchor=W, fill=COLORyellow)
             #root.update()       # update screen
-            
-            while scope.ask(':TRIG:STAT?') != 'STOP':
-                sleep(0.1)
+
+#            while True: 
+#                trigStat = scope.query(':TRIG:STAT?').strip()
+#                if 'STOP' == trigStat:
+#                    break
+#                sleep(0.1)
             #sleep(0.1)
     # Grab the raw data from channel 1, which will take a few seconds for long buffer mode
-
+           # sleep(0.1)
+            # PPM memory depth cannot be set when the scope is stopped
             scope.write(":STOP")
-            scope.write(":WAV:POIN:MODE RAW")
+            scope.write(":WAV:SOUR CHAN1")
+            scope.write(":WAV:FORM BYTE")
+            scope.write(":WAV:MODE RAW")
+            scope.write(":WAV:STAR 1")
+            scope.write(":WAV:STOP 250000")
+#            if SAMPLEdepth == 0:
+#                scope.write(":WAV:STOP 12000")
+#            else:
 
             txt = "->Acquire"
             x = X0L + 275
             y = Y0T+GRH+32
             IDtxt  = ca.create_text (x, y, text=txt, anchor=W, fill=COLORgreen)
-            root.update()       # update screen 
+            root.update()       # update screen
 
 
-            signals= scope.ask(":WAV:DATA? CHAN1")  #do this first
+            signals= scope.query_binary_values(":WAV:DATA?",datatype='b', data_points=250000)  #do this first
             data_size = len(signals)
-            
-            SAMPLErate = scope.ask_for_values(':ACQ:SAMP?')[0] #do this second
-            #print 'Data size:', SAMPLEsize, "Sample rate:", SAMPLErate
+
+#            SAMPLErate = scope.query_values(':ACQ:SRAT?')[0] #do this second
+            SAMPLErate = float(scope.query(':ACQ:SRAT?')) #do this second
+            print 'Data size:', data_size , "Sample rate:", SAMPLErate
 
 
 
-            sleep(0.1)               
+            # sleep(0.1)
 
 # convert data from (inverted) bytes to an array of scaled floats
 # this magic from Matthew Mets
-            SIGNAL1 = numpy.frombuffer(signals, 'B')
+#            SIGNAL1 = numpy.frombuffer(signals, 'B')
+            SIGNAL1 = numpy.fromiter(signals,'B')
             #print SIGNAL1
             SIGNAL1 = (SIGNAL1 * -1 + 255) -130  # invert
             #print SIGNAL1
             SIGNAL1 = SIGNAL1/127.0 # scale 10 +-1, has a slight DC offset
             #print SIGNAL1
-          
+
             UpdateAll()                                     # Update Data, trace and screen
 
             if SWEEPsingle == True:  # single sweep mode, sweep once then stop
                 SWEEPsingle = False
                 RUNstatus = 3
-                
+
         # RUNstatus = 3: Stop
         # RUNstatus = 4: Stop and restart
         if (RUNstatus == 3) or (RUNstatus == 4):
-            scope.write(":KEY:FORCE")
+            scope.write(":KEY:FOR")
             scope.close()
             if RUNstatus == 3:
-                RUNstatus = 0                               # Status is stopped 
-            if RUNstatus == 4:          
+                RUNstatus = 0                               # Status is stopped
+            if RUNstatus == 4:
                 RUNstatus = 1                               # Status is (re)start
             UpdateScreen()                                  # UpdateScreen() call
 
 
-        # Update tasks and screens by TKinter 
+        # Update tasks and screens by TKinter
         root.update_idletasks()
         root.update()                                       # update screens
 
@@ -662,7 +705,7 @@ def Sweep():   # Read samples and store the data into the arrays
 def UpdateAll():        # Update Data, trace and screen
     DoFFT()             # Fast Fourier transformation
     MakeTrace()         # Update the traces
-    UpdateScreen()      # Update the screen 
+    UpdateScreen()      # Update the screen
 
 
 def UpdateTrace():      # Update trace and screen
@@ -672,7 +715,7 @@ def UpdateTrace():      # Update trace and screen
 
 def UpdateScreen():     # Update screen with trace and text
     MakeScreen()        # Update the screen
-    root.update()       # Activate updated screens    
+    root.update()       # Activate updated screens
 
 
 def DoFFT():            # Fast Fourier transformation
@@ -698,30 +741,36 @@ def DoFFT():            # Fast Fourier transformation
     y = Y0T+GRH+32
     IDtxt  = ca.create_text (x, y, text=txt, anchor=W, fill=COLORred)
     root.update()       # update screen
-            
+
     T1 = time.time()                        # For time measurement of FFT routine
-    
+
     REX = []
     IMX = []
 
-  
+
 
     # No FFT if empty or too short array of audio samples
     if len(SIGNAL1) >= 1048576: # ensure only valid buffer sizes
-        fftsamples = LONGfftsize # can set this to be less than buffer size to make it faster    
+        fftsamples = LONGfftsize # can set this to be less than buffer size to make it faster
+    elif len(SIGNAL1) >= 131072: # ensure only valid buffer sizes
+        fftsamples = 131072
+    elif len(SIGNAL1) >= 65536: # ensure only valid buffer sizes
+        fftsamples = 65536
+    elif len(SIGNAL1) >= 32768: # ensure only valid buffer sizes
+        fftsamples = 32768
     elif len(SIGNAL1) >= 16384: # ensure only valid buffer sizes
-        fftsamples = 16384           
+        fftsamples = 16384
     elif len(SIGNAL1) >= 8192: # ensure only valid buffer sizes
         fftsamples = 8192
     else:
         return  # not a valid buffer size
-    #print "Buffersize:" + str(len(SIGNAL1)) + " FFTsize: " + str(fftsamples)
+    print "Buffersize:" + str(len(SIGNAL1)) + " FFTsize: " + str(fftsamples)
     SAMPLEsize= fftsamples
-    
+
     n = 0
     SIGNALlevel = 0.0
     v = 0.0
-    m = 0                                   # For calculation of correction factor 
+    m = 0                                   # For calculation of correction factor
     while n < fftsamples:
 
         v=SIGNAL1[n]
@@ -761,12 +810,12 @@ def DoFFT():            # Fast Fourier transformation
             w = 0.355768 - 0.487396 * math.cos(2 * math.pi * n / (fftsamples - 1)) + 0.144232 * math.cos(4 * math.pi * n / (fftsamples - 1))- 0.012604 * math.cos(6 * math.pi * n / (fftsamples - 1))
             v = w * v * 2.811
 
-        # Flat top window, 
+        # Flat top window,
         # medium-dynamic range, extra wide bandwidth B=3.77
         if FFTwindow == 6:
             w = 1.0 - 1.93 * math.cos(2 * math.pi * n / (fftsamples - 1)) + 1.29 * math.cos(4 * math.pi * n / (fftsamples - 1))- 0.388 * math.cos(6 * math.pi * n / (fftsamples - 1)) + 0.032 * math.cos(8 * math.pi * n / (fftsamples - 1))
             v = w * v * 1.000
-        
+
         # m = m + w / fftsamples                # For calculation of correction factor
         REX.append(v)                           # Append the value to the REX array
         IMX.append(0.0)                       # Append 0 to the imagimary part
@@ -795,7 +844,7 @@ def DoFFT():            # Fast Fourier transformation
     FFTresult = []
 
     #print len(FFTmemory)
-    
+
     n = 0
     while (n <= fftsamples / 2):
         # For relative to voltage: v = math.sqrt(REX[n] * REX[n] + IMX[n] * IMX[n])    # Calculate absolute value from re and im
@@ -859,14 +908,14 @@ def MakeTrace():        # Update the grid and trace
     # Vertical conversion factors (level dBs) and border limits
     Yconv = float(GRH) / (Vdiv * DBdivlist[DBdivindex])     # Conversion factors from dBs to screen points 10 is for 10 * log(power)
     #Yc = float(Y0T) + GRH + Yconv * (DBlevel -90)           # Zero postion and -90 dB for in grid range
-    Yc = float(Y0T) + GRH + Yconv * (DBlevel -(Vdiv * DBdivlist[DBdivindex])) 
+    Yc = float(Y0T) + GRH + Yconv * (DBlevel -(Vdiv * DBdivlist[DBdivindex]))
     Ymin = Y0T                                              # Minimum position of screen grid (top)
     Ymax = Y0T + GRH                                        # Maximum position of screen grid (bottom)
 
 
     # Horizontal conversion factors (frequency Hz) and border limits
     Fpixel = float(STOPfrequency - STARTfrequency) / GRW    # Frequency step per screen pixel
-    Fsample = float(SAMPLErate / 2) / (TRACEsize - 1)       # Frequency step per sample   
+    Fsample = float(SAMPLErate / 2) / (TRACEsize - 1)       # Frequency step per sample
 
     T1line = []
     n = 0
@@ -882,7 +931,7 @@ def MakeTrace():        # Update the grid and trace
                 y =  Yc - Yconv * 10 * math.log10(float(FFTresult[n]))  # Convert power to DBs, except for log(0) error
             except:
                 y = Ymax
-                
+
             if (y < Ymin):
                 y = Ymin
             if (y > Ymax):
@@ -894,8 +943,8 @@ def MakeTrace():        # Update the grid and trace
 
         if SNenabled == True and (F >= STARTsignalfreq and F <= STOPsignalfreq):                # Add to signal if inside signal band
             Slevel = Slevel + float(FFTresult[n])
-             
-        n = n + 1               
+
+        n = n + 1
 
     try:
         SNresult = 10 * math.log10(Slevel / Nlevel)
@@ -910,7 +959,7 @@ def MakeTrace():        # Update the grid and trace
     if  SNenabled == True and SNmeasurement == True:
         STARTsignalfreq = CENTERsignalfreq - CENTERsignalfreq * float(SNwidth) / 100
         STOPsignalfreq = CENTERsignalfreq + CENTERsignalfreq * float(SNwidth) / 100
-        
+
         if STARTsignalfreq >= STARTfrequency and STARTsignalfreq <= STOPfrequency:
             x = X0L + (STARTsignalfreq - STARTfrequency)  / Fpixel
             S1line.append(int(x + 0.5))
@@ -964,17 +1013,17 @@ def MakeScreen():       # Update the screen with traces and text
     global COLORtext
     global COLORsignalband
     global COLORaudiobar
-    global COLORaudiook 
+    global COLORaudiook
     global COLORaudiomax
     global CANVASwidth
     global CANVASheight
 
 
     # Delete all items on the screen
-    de = ca.find_enclosed ( 0, 0, CANVASwidth+1000, CANVASheight+1000)    
-    for n in de: 
+    de = ca.find_enclosed ( 0, 0, CANVASwidth+1000, CANVASheight+1000)
+    for n in de:
         ca.delete(n)
- 
+
 
     # Draw horizontal grid lines
     i = 0
@@ -1011,7 +1060,7 @@ def MakeScreen():       # Update the screen with traces and text
 
 
     # Draw traces
-    if len(T1line) > 4:                                     # Avoid writing lines with 1 coordinate    
+    if len(T1line) > 4:                                     # Avoid writing lines with 1 coordinate
         ca.create_line(T1line, fill=COLORtrace1)            # Write the trace 1
 
     if STOREtrace == True and len(T2line) > 4:              # Write the trace 2 if active
@@ -1020,10 +1069,10 @@ def MakeScreen():       # Update the screen with traces and text
 
     # Draw SIGNAL band lines
     if SNmeasurement == True:
-        if len(S1line) > 3:                                 # Avoid writing lines with 1 coordinate    
+        if len(S1line) > 3:                                 # Avoid writing lines with 1 coordinate
             ca.create_line(S1line, fill=COLORsignalband)    # Write the start frequency line of the signal band
 
-        if len(S2line) > 3:                                 # Avoid writing lines with 1 coordinate    
+        if len(S2line) > 3:                                 # Avoid writing lines with 1 coordinate
             ca.create_line(S2line, fill=COLORsignalband)    # Write the stop frequency line of the signal band
 
 
@@ -1034,7 +1083,7 @@ def MakeScreen():       # Update the screen with traces and text
     #txt = txt + "    FFT samples: " + str(SMPfftlist[SMPfftindex])
     txt = txt + "    FFT size: " + str(fftsamples)
     txt = txt + "    RBW: " + str(int((SAMPLErate/SAMPLEsize)/2))+" Hz"
-    
+
     if FFTwindow == 0:
         txt = txt + "    Rectangular (no) window (B=1) "
     if FFTwindow == 1:
@@ -1049,7 +1098,7 @@ def MakeScreen():       # Update the screen with traces and text
         txt = txt + "    Nuttall window (B=2.02) "
     if FFTwindow == 6:
         txt = txt + "    Flat top window (B=3.77) "
-        
+
     x = X0L
     y = 12
     idTXT = ca.create_text (x, y, text=txt, anchor=W, fill=COLORtext)
@@ -1065,14 +1114,14 @@ def MakeScreen():       # Update the screen with traces and text
 
     if TRACEmode == 2:
         txt = txt + "    Maximum hold mode "
-    
+
     if TRACEmode == 3:
-        txt = txt + "    Power average  mode (" + str(TRACEaverage) + ") " 
+        txt = txt + "    Power average  mode (" + str(TRACEaverage) + ") "
 
     if SNenabled == True and SNmeasurement == True:
         txt1 = str(int(SNresult * 10))
         while len(txt) < 2:
-            txt1 = "0" + txt1 
+            txt1 = "0" + txt1
         txt1 = txt1[:-1] + "." + txt1[-1:]
         txt = txt + "    Signal to Noise ratio (dB): " + txt1
 
@@ -1084,7 +1133,7 @@ def MakeScreen():       # Update the screen with traces and text
     # Soundcard level bargraph
     txt1 = "||||||||||||||||||||"   # Bargraph
     le = len(txt1)                  # length of bargraph
-        
+
     t = int(math.sqrt(SIGNALlevel) * le)
 
     n = 0
@@ -1109,14 +1158,14 @@ def MakeScreen():       # Update the screen with traces and text
         txt = "LONG"
     else:
         txt = "NORM"
-        
+
     if (RUNstatus == 0) or (RUNstatus == 3):
         txt = txt + " Sweep stopped"
     else:
         txt = txt + " Sweep running"
 
 
-    
+
     x = X0L + 100
     y = Y0T+GRH+32
     IDtxt  = ca.create_text (x, y, text=txt, anchor=W, fill=COLORtext)
@@ -1125,10 +1174,10 @@ def MakeScreen():       # Update the screen with traces and text
 # note the magic numbers below were determined by looking at the cursor values
 # not sure why they don't correspond to X0T and Y0T
     cursorx = (STARTfrequency + (root.winfo_pointerx()-root.winfo_rootx()-X0L-4) * (STOPfrequency-STARTfrequency)/GRW) /1000000
-    cursory = DBlevel - (root.winfo_pointery()-root.winfo_rooty()-Y0T-50) * Vdiv*DBdivlist[DBdivindex] /GRH 
-    
+    cursory = DBlevel - (root.winfo_pointery()-root.winfo_rooty()-Y0T-50) * Vdiv*DBdivlist[DBdivindex] /GRH
+
     txt = "Cursor " + str(cursorx)  + " MHz   " + str(cursory) + " dB"
-        
+
     x = X0L+800
     y = 12
     idTXT = ca.create_text (x, y, text=txt, anchor=W, fill=COLORtext)
@@ -1138,8 +1187,8 @@ def MakeScreen():       # Update the screen with traces and text
         Marker1valid=True
         idTXT = ca.create_text (Marker1x-3, Marker1y+4, text="^", anchor=W, fill=COLORMarker1)
         Marker1freq = (STARTfrequency + (Marker1x-19) * (STOPfrequency-STARTfrequency)/GRW) /1000000
-        Marker1db = DBlevel - (Marker1y-20) * Vdiv*DBdivlist[DBdivindex] /GRH 
-        txt = "Marker1 " + str(Marker1freq)  + " MHz   " + str(Marker1db) + " dB"    
+        Marker1db = DBlevel - (Marker1y-20) * Vdiv*DBdivlist[DBdivindex] /GRH
+        txt = "Marker1 " + str(Marker1freq)  + " MHz   " + str(Marker1db) + " dB"
         x = X0L + 300
         y = Y0T -10
         idTXT = ca.create_text (x, y, text=txt, anchor=W, fill=COLORMarker1)
@@ -1149,20 +1198,20 @@ def MakeScreen():       # Update the screen with traces and text
         Marker2valid=True
         idTXT = ca.create_text (Marker2x-3, Marker2y+4, text="^", anchor=W, fill=COLORMarker2)
         Marker2freq = (STARTfrequency + (Marker2x-19) * (STOPfrequency-STARTfrequency)/GRW) /1000000
-        Marker2db = DBlevel - (Marker2y-20) * Vdiv*DBdivlist[DBdivindex] /GRH 
-        txt = "Marker2 " + str(Marker2freq)  + " MHz   " + str(Marker2db) + " dB"    
+        Marker2db = DBlevel - (Marker2y-20) * Vdiv*DBdivlist[DBdivindex] /GRH
+        txt = "Marker2 " + str(Marker2freq)  + " MHz   " + str(Marker2db) + " dB"
         x = X0L + 520
         y = Y0T -10
         idTXT = ca.create_text (x, y, text=txt, anchor=W, fill=COLORMarker2)
-        
+
     # show marker delta only if both are valid
-    if (Marker1valid & Marker2valid): 
+    if (Marker1valid & Marker2valid):
         Deltafreq = abs(Marker2freq-Marker1freq)
         Deltadb = abs(Marker2db-Marker1db)
-        txt = "Delta " + str(Deltafreq)  + " MHz   " + str(Deltadb) + " dB"    
+        txt = "Delta " + str(Deltafreq)  + " MHz   " + str(Deltadb) + " dB"
         x = X0L + 750
         y = Y0T -10
-        idTXT = ca.create_text (x, y, text=txt, anchor=W, fill=COLORtext)   
+        idTXT = ca.create_text (x, y, text=txt, anchor=W, fill=COLORtext)
 
 """
 
@@ -1265,6 +1314,5 @@ root.update()               # Activate updated screens
 #SELECTaudiodevice()
 Sweep()
 
- 
 
 
