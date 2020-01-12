@@ -730,15 +730,6 @@ def Sweep():   # Read samples and store the data into the arrays
 #            tend  = time.time();
             SIGNAL1 = signals
 #            print ("numpy scaling:" + str (tend - tbeg))
-#            tbeg = time.time();
-#            SIGNAL1 = numpy.fromiter(SIGNAL,'B')
-#            #print SIGNAL1           
-#            SIGNAL1 = (SIGNAL1 * -1 + 255) -130  # invert
-#            #print SIGNAL1
-#            SIGNAL1 = SIGNAL1/127.0 # scale 10 +-1, has a slight DC offset
-#            #print SIGNAL1
-#            tend  = time.time();
-#            print ("NORMAL SCALING:" + str (tend - tbeg))
 
             UpdateAll()                                     # Update Data, trace and screen
 
@@ -885,35 +876,6 @@ def DoFFT():            # Fast Fourier transformation
         while n < fftsamples:
 
             v=SIGNAL1[n]
-            # Check for overload
-    #        va = abs(v)                         # Check for too high audio input level
-            #print v
-    #        if va > SIGNALlevel:
-    #            SIGNALlevel = va
-    
-            # Cosine window function
-            # medium-dynamic range B=1.24
-    #        if FFTwindow == 1:
-    #            w = math.sin(math.pi * n / (fftsamples - 1))
-    #            v = w * v * 1.571
-    
-            # Triangular non-zero endpoints
-            # medium-dynamic range B=1.33
-    #        if FFTwindow == 2:
-    #            w = (2.0 / fftsamples) * ((fftsamples / 2.0) - abs(n - (fftsamples - 1) / 2.0))
-    #            v = w * v * 2.0
-    
-#            # Hann window function
-#            # medium-dynamic range B=1.5
-#            if FFTwindow == 3:
-#                w = 0.5 - 0.5 * math.cos(2 * math.pi * n / (fftsamples - 1))
-#                v = w * v * 2.000
-    
-            # Blackman window, continuous first derivate function
-            # medium-dynamic range B=1.73
-            if FFTwindow == 4:
-                w = 0.42 - 0.5 * math.cos(2 * math.pi * n / (fftsamples - 1)) + 0.08 * math.cos(4 * math.pi * n / (fftsamples - 1))
-                v = w * v * 2.381
     
             # Nuttall window, continuous first derivate function
             # high-dynamic range B=2.02
@@ -935,7 +897,6 @@ def DoFFT():            # Fast Fourier transformation
 
     # if m > 0:                               # For calculation of correction factor
     #     print 1/m                           # For calculation of correction factor
-#    IMX = numpy.zeros(fftsamples)
     # Zero padding of array for better interpolation of peak level of signals
     ZEROpaddingvalue = int(math.pow(2,ZEROpadding) + 0.5)
     fftsamples = ZEROpaddingvalue * fftsamples       # Add zero's to the arrays
@@ -970,25 +931,6 @@ def DoFFT():            # Fast Fourier transformation
         v = numpy.add(FFTmemory)
     FFTresult = v    
     
-#    n = 0
-#    while (n <= fftsamples / 2):
-#        # For relative to voltage: v = math.sqrt(REX[n] * REX[n] + IMX[n] * IMX[n])    # Calculate absolute value from re and im
-#        v = REX[n] * REX[n] + IMX[n] * IMX[n]               # Calculate absolute value from re and im relative to POWER!
-#        v = v * Totalcorr                                   # Make level independent of samples and convert to display range
-
-#        if TRACEmode == 1:                                  # Normal mode, do not change v
-#            pass
-
-#        if TRACEmode == 2 and TRACEreset == False:          # Max hold, change v to maximum value
-#            if v < FFTmemory[n]:
-#                v = FFTmemory[n]
-
-#        if TRACEmode == 3 and TRACEreset == False:          # Average, add difference / TRACEaverage to v
-#            v = FFTmemory[n] + (v - FFTmemory[n]) / TRACEaverage
-
-#        FFTresult.append(v)                                 # Append the value to the FFTresult array
-
-#        n = n + 1
 
     TRACEreset = False                                      # Trace reset done
 
