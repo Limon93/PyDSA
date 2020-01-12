@@ -22,6 +22,7 @@ from Tkinter import *
 from tkFileDialog import askopenfilename
 from tkSimpleDialog import askstring
 from tkMessageBox import *
+from numpy import sign
 
 
 NUMPYenabled = True         # If NUMPY installed, then the FFT calculations is 4x faster than the own FFT calculation
@@ -544,7 +545,7 @@ def longSweepMdep(channelCount):
 def getWavData(scope, sampleLength):
     curStart = 1
     maxChunk = 250000
-    signals = list()
+    signals = None
     while curStart <= sampleLength:
         cmd = ":WAV:STAR " + str(curStart)
 #        print cmd    
@@ -555,7 +556,11 @@ def getWavData(scope, sampleLength):
         cmd = ":WAV:STOP " + str(end)
 #        print cmd    
         scope.write(cmd)
-        signals += scope.query_binary_values(":WAV:DATA?", datatype='B') #do this first
+        if (signals == None):
+            signals = scope.query_binary_values(":WAV:DATA?", datatype='B', container=numpy.array, chunk_size = 1048576)
+        else:    
+            signals = numpy.concatenate((signals, scope.query_binary_values(":WAV:DATA?", datatype='B', container=numpy.array, chunk_size=1048576)),axis=1) #do this first
+#                        signals += scope.query_binary_values(":WAV:DATA?", datatype='B', container=numpy.array, chunk_size=1048576) #do this first
         curStart = end + 1
     return signals
 
@@ -695,7 +700,12 @@ def Sweep():   # Read samples and store the data into the arrays
             samplelength = (1<<l2md) +1
 #            print ('mem depth'+ str(memdepth))
 #            print ('needed sample length'+ str(samplelength))
+           
+            tbeg = time.time();
             signals = getWavData(scope, samplelength)
+            tend = time.time();
+            print ("acquisition:" + str (tend - tbeg))
+            
             data_size = len(signals)
 
             SAMPLErate = float(scope.query(':ACQ:SRAT?')) #do this second
@@ -704,16 +714,31 @@ def Sweep():   # Read samples and store the data into the arrays
 
 
 
-
+            SIGNAL = signals
 # convert data from (inverted) bytes to an array of scaled floats
 # this magic from Matthew Mets
-#            SIGNAL1 = numpy.frombuffer(signals, 'B')
-            SIGNAL1 = numpy.fromiter(signals,'B')
-            #print SIGNAL1
-            SIGNAL1 = (SIGNAL1 * -1 + 255) -130  # invert
-            #print SIGNAL1
-            SIGNAL1 = SIGNAL1/127.0 # scale 10 +-1, has a slight DC offset
-            #print SIGNAL1
+#            tbeg = time.time();
+#            print signals
+            signals = numpy.multiply(signals,-1)
+#            print signals
+            signals = numpy.add(signals,255)            
+#            print signals
+            signals = numpy.subtract(signals,130)
+#            print signals
+            signals = numpy.divide(signals,127.0)            
+#            print signals
+#            tend  = time.time();
+            SIGNAL1 = signals
+#            print ("numpy scaling:" + str (tend - tbeg))
+#            tbeg = time.time();
+#            SIGNAL1 = numpy.fromiter(SIGNAL,'B')
+#            #print SIGNAL1           
+#            SIGNAL1 = (SIGNAL1 * -1 + 255) -130  # invert
+#            #print SIGNAL1
+#            SIGNAL1 = SIGNAL1/127.0 # scale 10 +-1, has a slight DC offset
+#            #print SIGNAL1
+#            tend  = time.time();
+#            print ("NORMAL SCALING:" + str (tend - tbeg))
 
             UpdateAll()                                     # Update Data, trace and screen
 
@@ -784,25 +809,23 @@ def DoFFT():            # Fast Fourier transformation
 
     T1 = time.time()                        # For time measurement of FFT routine
 
-    REX = []
-    IMX = []
 
 
 
     # No FFT if empty or too short array of audio samples
-    if len(SIGNAL1) >= 1<<32: # ensure only valid buffer sizes
-        fftsamples = 1<<30 # can set this to be less than buffer size to make it faster
-    elif len(SIGNAL1) >= 1<<30: # ensure only valid buffer sizes
-        fftsamples = 1<<28 # can set this to be less than buffer size to make it faster
-    elif len(SIGNAL1) >= 1<<28: # ensure only valid buffer sizes
-        fftsamples = 1<<26 # can set this to be less than buffer size to make it faster
-    elif len(SIGNAL1) >= 1<<26: # ensure only valid buffer sizes
+    if len(SIGNAL1) >= 1<<24: # ensure only valid buffer sizes
         fftsamples = 1<<24 # can set this to be less than buffer size to make it faster
-    elif len(SIGNAL1) >= 1<<24: # ensure only valid buffer sizes
-        fftsamples = 1<<22 # can set this to be less than buffer size to make it faster
+    elif len(SIGNAL1) >= 1<<23: # ensure only valid buffer sizes
+        fftsamples = 1<<23 # can set this to be less than buffer size to make it faster
     elif len(SIGNAL1) >= 1<<22: # ensure only valid buffer sizes
-        fftsamples = 1<<20 # can set this to be less than buffer size to make it faster
+        fftsamples = 1<<22 # can set this to be less than buffer size to make it faster
+    elif len(SIGNAL1) >= 1<<21: # ensure only valid buffer sizes
+        fftsamples = 1<<21 # can set this to be less than buffer size to make it faster
     elif len(SIGNAL1) >= 1<<20: # ensure only valid buffer sizes
+        fftsamples = 1<<20 # can set this to be less than buffer size to make it faster
+    elif len(SIGNAL1) >= 1<<19: # ensure only valid buffer sizes
+        fftsamples = 1<<19 # can set this to be less than buffer size to make it faster
+    elif len(SIGNAL1) >= 1<<18: # ensure only valid buffer sizes
         fftsamples = 1<<18 # can set this to be less than buffer size to make it faster
     elif len(SIGNAL1) >= 131072: # ensure only valid buffer sizes
         fftsamples = 131072
@@ -823,67 +846,106 @@ def DoFFT():            # Fast Fourier transformation
     SIGNALlevel = 0.0
     v = 0.0
     m = 0                                   # For calculation of correction factor
-    while n < fftsamples:
 
-        v=SIGNAL1[n]
-        # Check for overload
-        va = abs(v)                         # Check for too high audio input level
-        #print v
-        if va > SIGNALlevel:
-            SIGNALlevel = va
+    SIGNAL1A = numpy.abs(SIGNAL1)
+    SIGNALlevel = numpy.max(SIGNAL1A)
+    # Cosine window function
+    # medium-dynamic range B=1.24
+    if FFTwindow == 1:
+        w = numpy.arange(len (SIGNAL1))
+        w = numpy.multiply(w,math.pi)
+        w = numpy.divide(w,fftsamples -1)
+        w = numpy.sin(w)
+        w = numpy.multiply(w,1.571)
+        REX = numpy.multiply(SIGNAL1,w)
+    # Triangular non-zero endpoints
+    # medium-dynamic range B=1.33
+    elif FFTwindow == 2:
+        w = numpy.arange(len(SIGNAL1))
+        w = numpy.subtract(w,(fftsamples -1)/2.0)
+        w = numpy.abs(w)
+        w = numpy.multiply(w,-1)
+        w = numpy.add(w,fftsamples / 2.0)
+        w = numpy.multiply(w,2.0/fftsamples)
+        REX = numpy.multiply(SIGNAL1,w)
+    # Hann window function
+    # medium-dynamic range B=1.5
+    elif FFTwindow == 3:
+        w = numpy.hanning(fftsamples)
+        w = numpy.multiply(w,2.0)
+        REX = numpy.multiply(SIGNAL1[:fftsamples],w)
+    # Blackman window, continuous first derivate function
+    # medium-dynamic range B=1.73
+    if FFTwindow == 4:
+        w = numpy.blackman(fftsamples)
+        w = numpy.multiply(w,2.381)
+        REX = numpy.multiply(SIGNAL1[:fftsamples],w)   
+    else :    
+        REX = []
+        while n < fftsamples:
 
-        # Cosine window function
-        # medium-dynamic range B=1.24
-        if FFTwindow == 1:
-            w = math.sin(math.pi * n / (fftsamples - 1))
-            v = w * v * 1.571
-
-        # Triangular non-zero endpoints
-        # medium-dynamic range B=1.33
-        if FFTwindow == 2:
-            w = (2.0 / fftsamples) * ((fftsamples / 2.0) - abs(n - (fftsamples - 1) / 2.0))
-            v = w * v * 2.0
-
-        # Hann window function
-        # medium-dynamic range B=1.5
-        if FFTwindow == 3:
-            w = 0.5 - 0.5 * math.cos(2 * math.pi * n / (fftsamples - 1))
-            v = w * v * 2.000
-
-        # Blackman window, continuous first derivate function
-        # medium-dynamic range B=1.73
-        if FFTwindow == 4:
-            w = 0.42 - 0.5 * math.cos(2 * math.pi * n / (fftsamples - 1)) + 0.08 * math.cos(4 * math.pi * n / (fftsamples - 1))
-            v = w * v * 2.381
-
-        # Nuttall window, continuous first derivate function
-        # high-dynamic range B=2.02
-        if FFTwindow == 5:
-            w = 0.355768 - 0.487396 * math.cos(2 * math.pi * n / (fftsamples - 1)) + 0.144232 * math.cos(4 * math.pi * n / (fftsamples - 1))- 0.012604 * math.cos(6 * math.pi * n / (fftsamples - 1))
-            v = w * v * 2.811
-
-        # Flat top window,
-        # medium-dynamic range, extra wide bandwidth B=3.77
-        if FFTwindow == 6:
-            w = 1.0 - 1.93 * math.cos(2 * math.pi * n / (fftsamples - 1)) + 1.29 * math.cos(4 * math.pi * n / (fftsamples - 1))- 0.388 * math.cos(6 * math.pi * n / (fftsamples - 1)) + 0.032 * math.cos(8 * math.pi * n / (fftsamples - 1))
-            v = w * v * 1.000
-
-        # m = m + w / fftsamples                # For calculation of correction factor
-        REX.append(v)                           # Append the value to the REX array
-        IMX.append(0.0)                       # Append 0 to the imagimary part
-
-        n = n + 1
+            v=SIGNAL1[n]
+            # Check for overload
+    #        va = abs(v)                         # Check for too high audio input level
+            #print v
+    #        if va > SIGNALlevel:
+    #            SIGNALlevel = va
+    
+            # Cosine window function
+            # medium-dynamic range B=1.24
+    #        if FFTwindow == 1:
+    #            w = math.sin(math.pi * n / (fftsamples - 1))
+    #            v = w * v * 1.571
+    
+            # Triangular non-zero endpoints
+            # medium-dynamic range B=1.33
+    #        if FFTwindow == 2:
+    #            w = (2.0 / fftsamples) * ((fftsamples / 2.0) - abs(n - (fftsamples - 1) / 2.0))
+    #            v = w * v * 2.0
+    
+#            # Hann window function
+#            # medium-dynamic range B=1.5
+#            if FFTwindow == 3:
+#                w = 0.5 - 0.5 * math.cos(2 * math.pi * n / (fftsamples - 1))
+#                v = w * v * 2.000
+    
+            # Blackman window, continuous first derivate function
+            # medium-dynamic range B=1.73
+            if FFTwindow == 4:
+                w = 0.42 - 0.5 * math.cos(2 * math.pi * n / (fftsamples - 1)) + 0.08 * math.cos(4 * math.pi * n / (fftsamples - 1))
+                v = w * v * 2.381
+    
+            # Nuttall window, continuous first derivate function
+            # high-dynamic range B=2.02
+            if FFTwindow == 5:
+                w = 0.355768 - 0.487396 * math.cos(2 * math.pi * n / (fftsamples - 1)) + 0.144232 * math.cos(4 * math.pi * n / (fftsamples - 1))- 0.012604 * math.cos(6 * math.pi * n / (fftsamples - 1))
+                v = w * v * 2.811
+    
+            # Flat top window,
+            # medium-dynamic range, extra wide bandwidth B=3.77
+            if FFTwindow == 6:
+                w = 1.0 - 1.93 * math.cos(2 * math.pi * n / (fftsamples - 1)) + 1.29 * math.cos(4 * math.pi * n / (fftsamples - 1))- 0.388 * math.cos(6 * math.pi * n / (fftsamples - 1)) + 0.032 * math.cos(8 * math.pi * n / (fftsamples - 1))
+                v = w * v * 1.000
+    
+            # m = m + w / fftsamples                # For calculation of correction factor
+            REX.append(v)                           # Append the value to the REX array
+            n = n + 1        
+    #        IMX.append(0.0)                       # Append 0 to the imagimary part
+        
 
     # if m > 0:                               # For calculation of correction factor
     #     print 1/m                           # For calculation of correction factor
-
+#    IMX = numpy.zeros(fftsamples)
     # Zero padding of array for better interpolation of peak level of signals
     ZEROpaddingvalue = int(math.pow(2,ZEROpadding) + 0.5)
     fftsamples = ZEROpaddingvalue * fftsamples       # Add zero's to the arrays
     #fftsamples = ZEROpaddingvalue * fftsamples -1      # Add zero's to the arrays
 
     # The FFT calculation with NUMPY if NUMPYenabled == True or with the FFT calculation below
+    tbeg = time.time();
     fftresult = numpy.fft.fft(REX, n=fftsamples)# Do FFT+zeropadding till n=fftsamples with NUMPY if NUMPYenabled == True
+    tend = time.time();
+    print "fft.comp.done: " + str(tend -tbeg)
     REX=fftresult.real
     IMX=fftresult.imag
 
@@ -897,30 +959,41 @@ def DoFFT():            # Fast Fourier transformation
 
     #print len(FFTmemory)
 
-    n = 0
-    while (n <= fftsamples / 2):
-        # For relative to voltage: v = math.sqrt(REX[n] * REX[n] + IMX[n] * IMX[n])    # Calculate absolute value from re and im
-        v = REX[n] * REX[n] + IMX[n] * IMX[n]               # Calculate absolute value from re and im relative to POWER!
-        v = v * Totalcorr                                   # Make level independent of samples and convert to display range
+    v = numpy.absolute(fftresult);
+    v = numpy.square(v)
+    v = numpy.multiply(v,Totalcorr)
+    if TRACEmode == 2 and TRACEreset == False:          # Max hold, change v to maximum value
+        v = numpy.max(v,FFTmemory)
+    elif TRACEmode == 3 and TRACEreset == False:          # Average, add difference / TRACEaverage to v
+        v = numpy.subtract(FFTmemory)
+        v = numpy.divide(TRACEaverage)
+        v = numpy.add(FFTmemory)
+    FFTresult = v    
+    
+#    n = 0
+#    while (n <= fftsamples / 2):
+#        # For relative to voltage: v = math.sqrt(REX[n] * REX[n] + IMX[n] * IMX[n])    # Calculate absolute value from re and im
+#        v = REX[n] * REX[n] + IMX[n] * IMX[n]               # Calculate absolute value from re and im relative to POWER!
+#        v = v * Totalcorr                                   # Make level independent of samples and convert to display range
 
-        if TRACEmode == 1:                                  # Normal mode, do not change v
-            pass
+#        if TRACEmode == 1:                                  # Normal mode, do not change v
+#            pass
 
-        if TRACEmode == 2 and TRACEreset == False:          # Max hold, change v to maximum value
-            if v < FFTmemory[n]:
-                v = FFTmemory[n]
+#        if TRACEmode == 2 and TRACEreset == False:          # Max hold, change v to maximum value
+#            if v < FFTmemory[n]:
+#                v = FFTmemory[n]
 
-        if TRACEmode == 3 and TRACEreset == False:          # Average, add difference / TRACEaverage to v
-            v = FFTmemory[n] + (v - FFTmemory[n]) / TRACEaverage
+#        if TRACEmode == 3 and TRACEreset == False:          # Average, add difference / TRACEaverage to v
+#            v = FFTmemory[n] + (v - FFTmemory[n]) / TRACEaverage
 
-        FFTresult.append(v)                                 # Append the value to the FFTresult array
+#        FFTresult.append(v)                                 # Append the value to the FFTresult array
 
-        n = n + 1
+#        n = n + 1
 
     TRACEreset = False                                      # Trace reset done
 
     T2 = time.time()
-    # print (T2 - T1)                                         # For time measurement of FFT routine
+    print "total fft" + str(T2 - T1)                                         # For time measurement of FFT routine
 
 
 def MakeTrace():        # Update the grid and trace
