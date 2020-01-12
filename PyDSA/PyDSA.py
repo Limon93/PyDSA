@@ -844,32 +844,28 @@ def DoFFT():            # Fast Fourier transformation
     # Cosine window function
     # medium-dynamic range B=1.24
     if FFTwindow == 1:
-        w = numpy.arange(len (SIGNAL1))
+        w = numpy.arange(fftsamples)
         w = numpy.multiply(w,math.pi)
         w = numpy.divide(w,fftsamples -1)
         w = numpy.sin(w)
         w = numpy.multiply(w,1.571)
-        REX = numpy.multiply(SIGNAL1,w)
+        REX = numpy.multiply(SIGNAL1[:fftsamples],w)
     # Triangular non-zero endpoints
     # medium-dynamic range B=1.33
     elif FFTwindow == 2:
-        w = numpy.arange(len(SIGNAL1))
-        w = numpy.subtract(w,(fftsamples -1)/2.0)
-        w = numpy.abs(w)
-        w = numpy.multiply(w,-1)
-        w = numpy.add(w,fftsamples / 2.0)
-        w = numpy.multiply(w,2.0/fftsamples)
-        REX = numpy.multiply(SIGNAL1,w)
+        w = signal.triang(fftsamples)
+        w = numpy.multiply(w,2.0)
+        REX = numpy.multiply(SIGNAL1[:fftsamples],w)
     # Hann window function
     # medium-dynamic range B=1.5
     elif FFTwindow == 3:
-        w = numpy.hanning(fftsamples)
+        w = signal.hann(fftsamples)
         w = numpy.multiply(w,2.0)
         REX = numpy.multiply(SIGNAL1[:fftsamples],w)
     # Blackman window, continuous first derivate function
     # medium-dynamic range B=1.73
     elif FFTwindow == 4:
-        w = numpy.blackman(fftsamples)
+        w = signal.blackman(fftsamples)
         w = numpy.multiply(w,2.381)
         REX = numpy.multiply(SIGNAL1[:fftsamples],w)   
     # Nuttall window, continuous first derivate function
@@ -877,32 +873,14 @@ def DoFFT():            # Fast Fourier transformation
     elif FFTwindow == 5:
         w = signal.nuttall(fftsamples)
         w = numpy.multiply(w,2.811)
-        REX = numpy.multiply(SIGNAL1[:fftsamples],w)   
-    elif FFTwindow == 0:
+        REX = numpy.multiply(SIGNAL1[:fftsamples],w)
+    elif FFTwindow == 6:
+        w = signal.flattop(fftsamples)
+#        w = numpy.multiply(w,1.0)
+        REX = numpy.multiply(SIGNAL1[:fftsamples],w)              
+    else:   # no window (rectangular)
         REX = SIGNAL1[:fftsamples]   
-    else :    
-        REX = []
-        while n < fftsamples:
-
-            v=SIGNAL1[n]
     
-            # Nuttall window, continuous first derivate function
-            # high-dynamic range B=2.02
-            if FFTwindow == 5:
-                w = 0.355768 - 0.487396 * math.cos(2 * math.pi * n / (fftsamples - 1)) + 0.144232 * math.cos(4 * math.pi * n / (fftsamples - 1))- 0.012604 * math.cos(6 * math.pi * n / (fftsamples - 1))
-                v = w * v * 2.811
-    
-            # Flat top window,
-            # medium-dynamic range, extra wide bandwidth B=3.77
-            if FFTwindow == 6:
-                w = 1.0 - 1.93 * math.cos(2 * math.pi * n / (fftsamples - 1)) + 1.29 * math.cos(4 * math.pi * n / (fftsamples - 1))- 0.388 * math.cos(6 * math.pi * n / (fftsamples - 1)) + 0.032 * math.cos(8 * math.pi * n / (fftsamples - 1))
-                v = w * v * 1.000
-    
-            # m = m + w / fftsamples                # For calculation of correction factor
-            REX.append(v)                           # Append the value to the REX array
-            n = n + 1        
-    #        IMX.append(0.0)                       # Append 0 to the imagimary part
-        
 
     # if m > 0:                               # For calculation of correction factor
     #     print 1/m                           # For calculation of correction factor
