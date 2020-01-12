@@ -14,6 +14,7 @@
 import math
 import time
 import numpy
+from  scipy import signal
 import tkFont
 import sys
 import pyvisa
@@ -867,10 +868,18 @@ def DoFFT():            # Fast Fourier transformation
         REX = numpy.multiply(SIGNAL1[:fftsamples],w)
     # Blackman window, continuous first derivate function
     # medium-dynamic range B=1.73
-    if FFTwindow == 4:
+    elif FFTwindow == 4:
         w = numpy.blackman(fftsamples)
         w = numpy.multiply(w,2.381)
         REX = numpy.multiply(SIGNAL1[:fftsamples],w)   
+    # Nuttall window, continuous first derivate function
+    # high-dynamic range B=2.02
+    elif FFTwindow == 5:
+        w = signal.nuttall(fftsamples)
+        w = numpy.multiply(w,2.811)
+        REX = numpy.multiply(SIGNAL1[:fftsamples],w)   
+    elif FFTwindow == 0:
+        REX = SIGNAL1[:fftsamples]   
     else :    
         REX = []
         while n < fftsamples:
@@ -903,10 +912,10 @@ def DoFFT():            # Fast Fourier transformation
     #fftsamples = ZEROpaddingvalue * fftsamples -1      # Add zero's to the arrays
 
     # The FFT calculation with NUMPY if NUMPYenabled == True or with the FFT calculation below
-    tbeg = time.time();
+#    tbeg = time.time();
     fftresult = numpy.fft.fft(REX, n=fftsamples)# Do FFT+zeropadding till n=fftsamples with NUMPY if NUMPYenabled == True
-    tend = time.time();
-    print "fft.comp.done: " + str(tend -tbeg)
+#    tend = time.time();
+#    print "fft.comp.done: " + str(tend -tbeg)
     REX=fftresult.real
     IMX=fftresult.imag
 
@@ -926,9 +935,9 @@ def DoFFT():            # Fast Fourier transformation
     if TRACEmode == 2 and TRACEreset == False:          # Max hold, change v to maximum value
         v = numpy.max(v,FFTmemory)
     elif TRACEmode == 3 and TRACEreset == False:          # Average, add difference / TRACEaverage to v
-        v = numpy.subtract(FFTmemory)
-        v = numpy.divide(TRACEaverage)
-        v = numpy.add(FFTmemory)
+        v = numpy.subtract(v,FFTmemory)
+        v = numpy.divide(v,TRACEaverage)
+        v = numpy.add(v,FFTmemory)
     FFTresult = v    
     
 
