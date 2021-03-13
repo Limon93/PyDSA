@@ -9,14 +9,14 @@
 import math
 import time
 import numpy
-import tkFont
+import tkinter.font as tkFont
 import sys
-import visa
+import pyvisa as visa
 from time import sleep
-from Tkinter import *
-from tkFileDialog import askopenfilename
-from tkSimpleDialog import askstring
-from tkMessageBox import *
+from tkinter import *
+from tkinter.filedialog import askopenfilename
+from tkinter.simpledialog import askstring
+from tkinter.messagebox import *
 
 
 NUMPYenabled = True         # If NUMPY installed, then the FFT calculations is 4x faster than the own FFT calculation
@@ -120,7 +120,7 @@ if NUMPYenabled == True:
 
 # =================================== Start widgets routines ========================================
 def Bnot():
-    print "Routine not made yet"
+    print("Routine not made yet")
 
 def on_click(self, event):
         # Last click in absolute coordinates
@@ -549,7 +549,7 @@ def Sweep():   # Read samples and store the data into the arrays
 
             try:
 # Get the USB device, e.g. 'USB0::0x1AB1::0x0588::DS1ED141904883'
-                rm = visa.ResourceManager('@py')
+                rm = visa.ResourceManager()
                 instruments = rm.list_resources()
                 #instruments = visa.get_instruments_list()
                 #usb = filter(lambda x: 'USB' in x, instruments)
