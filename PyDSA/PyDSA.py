@@ -15,14 +15,14 @@ import math
 import time
 import numpy
 from  scipy import signal
-import tkFont
+import tkinter.font as tkFont
 import sys
 import pyvisa
 from time import sleep
-from Tkinter import *
-from tkFileDialog import askopenfilename
-from tkSimpleDialog import askstring
-from tkMessageBox import *
+from tkinter import *
+from tkinter.filedialog import askopenfilename
+from tkinter.simpledialog import askstring
+from tkinter.messagebox import *
 from numpy import sign
 
 
@@ -129,7 +129,7 @@ if NUMPYenabled == True:
 
 # =================================== Start widgets routines ========================================
 def Bnot():
-    print "Routine not made yet"
+    print("Routine not made yet")
 
 def on_click(self, event):
         # Last click in absolute coordinates
@@ -601,19 +601,22 @@ def Sweep():   # Read samples and store the data into the arrays
 # Get the USB device, e.g. 'USB0::0x1AB1::0x0588::DS1ED141904883'
 # pyVisa 1.6  compatibilty
 #                instruments = visa.get_instruments_list()
-                rm = pyvisa.ResourceManager()
+                rm = pyvisa.ResourceManager('@py')
                 instruments = rm.list_resources()
 
-                usb = filter(lambda x: 'USB' in x, instruments)
-                if len(usb) != 1:
-                    print 'Bad instrument list', instruments
-                    sys.exit(-1)
-                print usb
+                for index, content in enumerate(instruments):
+                    if (instruments[index].find('USB') != -1):
+                        inst_index = index
+                #if len(usb) != 1:
+                #    print('Bad instrument list', instruments)
+                #    sys.exit(-1)
+                #print(usb)
 # pyVisa 1.6  compatibilty
-                instr = usb[0] 
+                #instr = usb[0] 
 #                instr = 'TCPIP0::10.96.0.240::INSTR'
 
-                scope = rm.open_resource(instr, timeout=10000, chunk_size=1024000)
+                scope = rm.open_resource(instruments[inst_index], timeout=10000, chunk_size=1024000)
+
                 sleep(0.2) 
                 scope.write(":RUN")
                 scope.write(":WAV:SOUR CHAN1")
@@ -621,10 +624,10 @@ def Sweep():   # Read samples and store the data into the arrays
                 scope.write(":WAV:MODE RAW")
                 sleep(0.2)                     
                 if SAMPLEdepth == 0:
-                    print 'NORM'
+                    print('NORM')
                     scope.write(':ACQ:MDEP 12000') # normal memory type
                 else:
-                    print 'LONG'
+                    print('LONG')
                     scope.write(':ACQ:MDEP ' + str(longSweepMdep(channelsEnabled(scope)))) # long memory type
                 sleep(0.5)
                 print ('mem depth'+ scope.query(':ACQ:MDEP?'))
@@ -746,7 +749,7 @@ def Sweep():   # Read samples and store the data into the arrays
 #            scope.write(":KEY:FOR") 
             scope.close()
             scope = None
-            print " scope closed"
+            print (" scope closed")
             if RUNstatus == 3:
                 RUNstatus = 0                               # Status is stopped
             if RUNstatus == 4:
@@ -922,7 +925,7 @@ def DoFFT():            # Fast Fourier transformation
     TRACEreset = False                                      # Trace reset done
 
     T2 = time.time()
-    print "total fft" + str(T2 - T1)                                         # For time measurement of FFT routine
+    print ("total fft" + str(T2 - T1))                                         # For time measurement of FFT routine
 
 
 def MakeTrace():        # Update the grid and trace
