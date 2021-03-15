@@ -71,7 +71,7 @@ Buttonwidth2 = 8
 
 # Initialisation of general variables
 STARTfrequency = 0.0        # Startfrequency
-STOPfrequency = 10000000.0     # Stopfrequency
+STOPfrequency = 50000000.0     # Stopfrequency
 
 SNenabled= False            # If Signal to Noise is enabled in the software
 CENTERsignalfreq = 1000     # Center signal frequency of signal bandwidth for S/N measurement
@@ -110,6 +110,8 @@ Marker1y = 0
 
 Marker2x = 0                # marker pip 2
 Marker2y = 0
+
+IPadress = "192.168.0.2"
 
 if NUMPYenabled == True:
     try:
@@ -489,6 +491,15 @@ def BStopfrequency():
     if RUNstatus == 0:      # Update if stopped
         UpdateTrace()
 
+def BIPadress():
+    global IPadress
+
+    s = askstring("IP adress", "Enter IP adress")
+
+    if (s == None):         # If Cancel pressed, then None
+        return()
+    IPadress = s
+    print(IPadress)
 
 def BDBdiv1():
     global DBdivindex
@@ -536,6 +547,9 @@ def Sweep():   # Read samples and store the data into the arrays
     global COLORyellow
     global COLORgreen
     global COLORmagenta
+    global IPadress
+    global rm
+    global scope
     
     while (True):                                           # Main loop
 
@@ -546,24 +560,24 @@ def Sweep():   # Read samples and store the data into the arrays
                 UPDATEspeed = 1.0
 
             TRACESopened = 1
-
-            try:
+            ConnecttoScope()
+#            try:
 # Get the USB device, e.g. 'USB0::0x1AB1::0x0588::DS1ED141904883'
-                rm = visa.ResourceManager()
-                instruments = rm.list_resources()
+#                rm = visa.ResourceManager()
+#                instruments = rm.list_resources()
                 #instruments = visa.get_instruments_list()
                 #usb = filter(lambda x: 'USB' in x, instruments)
                 #if len(usb) != 1:
                 #    print 'Bad instrument list', instruments
                 #    sys.exit(-1)
-                scope = rm.open_resource('TCPIP0::192.168.178.88::INSTR')
+#                scope = rm.open_resource('TCPIP0::' + IPadress + '::INSTR')
                 #scope = visa.instrument(usb[0], timeout=20, chunk_size=1024000) # bigger timeout for long mem
 
-                RUNstatus = 2
-            except:                                         # If error in opening audio stream, show error
-                RUNstatus = 0
+#                RUNstatus = 2
+#            except:                                         # If error in opening audio stream, show error
+#                RUNstatus = 0
                 #txt = "Sample rate: " + str(SAMPLErate) + ", try a lower sample rate.\nOr another audio device."
-                showerror("VISA Error","Cannot open scope")
+#                showerror("VISA Error","Cannot open scope")
 
 # get metadata
             #sample_rate = float(scope.ask(':ACQ:SRAT?'))
@@ -629,7 +643,7 @@ def Sweep():   # Read samples and store the data into the arrays
             signals = signals[11:]
             data_size = len(signals)
             #print data_size
-            #print signals
+            #print(signals)
             SAMPLErate = scope.query_ascii_values(':ACQ:SRAT?')[0] #do this second
             #print 'Data size:', SAMPLEsize, "Sample rate:", SAMPLErate
 
@@ -685,6 +699,28 @@ def UpdateScreen():     # Update screen with trace and text
     MakeScreen()        # Update the screen
     root.update()       # Activate updated screens    
 
+def ConnecttoScope():
+    global rm
+    global scope
+    global IPadress
+    global RUNstatus
+
+    try:
+        rm = visa.ResourceManager()
+        scope = rm.open_resource('TCPIP0::' + IPadress + '::INSTR')
+        #print('TCPIP0::' + IPadress + '::INSTR')
+        RUNstatus = 2
+    except:
+        RUNstatus = 0
+        showerror("VISA Error","Cannot open scope")
+        s = askstring("IP adress", "Enter IP dress")
+
+        if (s == None):         # If Cancel pressed, then None
+            sys.exit(-1)
+            #return()
+        IPadress = s
+
+
 
 def DoFFT():            # Fast Fourier transformation
     global SIGNAL1
@@ -709,7 +745,7 @@ def DoFFT():            # Fast Fourier transformation
     y = Y0T+GRH+32
     IDtxt  = ca.create_text (x, y, text=txt, anchor=W, fill=COLORred)
     root.update()       # update screen
-            
+    
     T1 = time.time()                        # For time measurement of FFT routine
     
     REX = []
@@ -726,9 +762,9 @@ def DoFFT():            # Fast Fourier transformation
         fftsamples = 8192
     else:
         return  # not a valid buffer size
-    #print "Buffersize:" + str(len(SIGNAL1)) + " FFTsize: " + str(fftsamples)
+    #print("Buffersize:" + str(len(SIGNAL1)) + " FFTsize: " + str(fftsamples))
     SAMPLEsize= fftsamples
-    
+
     n = 0
     SIGNALlevel = 0.0
     v = 0.0
@@ -1213,6 +1249,9 @@ b = Button(frame1, text="Zero Padding", width=Buttonwidth1, command=BSetup)
 b.pack(side=LEFT, padx=5, pady=5)
 
 b = Button(frame1, text="FFTwindow", width=Buttonwidth1, command=BFFTwindow)
+b.pack(side=LEFT, padx=5, pady=5)
+
+b = Button(frame1, text="IPadress", width=Buttonwidth1, command=BIPadress)
 b.pack(side=LEFT, padx=5, pady=5)
 
 b = Button(frame1, text="Store trace", width=Buttonwidth1, command=BSTOREtrace)
