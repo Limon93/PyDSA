@@ -7,6 +7,7 @@ Changes to rheslip's and ppmkm's version:
 1. PyVISA version 1.10.1
 2. Tested under Linux (Mint).
 3. pyvisa-py used.
+4. python3 used.
 
 Installation instructions for Linux  (2021-03-15):
 
