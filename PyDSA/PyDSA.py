@@ -625,7 +625,7 @@ def Sweep():   # Read samples and store the data into the arrays
                 sleep(0.2)                     
                 if SAMPLEdepth == 0:
                     print('NORM')
-                    scope.write(':ACQ:MDEP 12000') # normal memory type
+                    scope.write(':ACQ:MDEP 120000') # normal memory type
                 else:
                     print('LONG')
                     scope.write(':ACQ:MDEP ' + str(longSweepMdep(channelsEnabled(scope)))) # long memory type
@@ -1230,8 +1230,10 @@ def MakeScreen():       # Update the screen with traces and text
 # show the values at the mouse cursor
 # note the magic numbers below were determined by looking at the cursor values
 # not sure why they don't correspond to X0T and Y0T
-    cursorx = (STARTfrequency + (root.winfo_pointerx()-root.winfo_rootx()-X0L-4) * (STOPfrequency-STARTfrequency)/GRW) /1000000
-    cursory = DBlevel - (root.winfo_pointery()-root.winfo_rooty()-Y0T-50) * Vdiv*DBdivlist[DBdivindex] /GRH
+    xoffset = (root.winfo_width()-GRW)/2
+    yoffset = (root.winfo_height()-GRH-root.winfo_rooty())/2
+    cursorx = (STARTfrequency + (root.winfo_pointerx()-root.winfo_rootx()-xoffset) * (STOPfrequency-STARTfrequency)/GRW) /1000000
+    cursory = DBlevel - (root.winfo_pointery()-root.winfo_rooty()-yoffset) * Vdiv*DBdivlist[DBdivindex] /GRH
 
     txt = "Cursor " + str(cursorx)  + " MHz   " + str(cursory) + " dB"
 
