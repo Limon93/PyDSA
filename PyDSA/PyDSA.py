@@ -546,7 +546,7 @@ def longSweepMdep(channelCount):
 def getWavData(scope, sampleLength):
     curStart = 1
     maxChunk = 250000
-    signals = None
+    signals = numpy.array([])
     while curStart <= sampleLength:
         cmd = ":WAV:STAR " + str(curStart)
 #        print cmd    
@@ -557,10 +557,10 @@ def getWavData(scope, sampleLength):
         cmd = ":WAV:STOP " + str(end)
 #        print cmd    
         scope.write(cmd)
-        if (signals == None):
+        if (signals.size == 0):
             signals = scope.query_binary_values(":WAV:DATA?", datatype='B', container=numpy.array, chunk_size = 1048576)
         else:    
-            signals = numpy.concatenate((signals, scope.query_binary_values(":WAV:DATA?", datatype='B', container=numpy.array, chunk_size=1048576)),axis=1) #do this first
+            signals = numpy.append(signals, scope.query_binary_values(":WAV:DATA?", datatype='B', container=numpy.array, chunk_size=1048576),axis=0) #do this first
 #                        signals += scope.query_binary_values(":WAV:DATA?", datatype='B', container=numpy.array, chunk_size=1048576) #do this first
         curStart = end + 1
     return signals
