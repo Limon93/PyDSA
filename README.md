@@ -18,21 +18,22 @@ I've included offline setup for to avoid any compatibility issue and ensure a fu
 The offline setup only works with CentOS 7.
 
 # Online Setup
-## Setup NI-VISA 18.2 2018  
-    Download NI 2018 from https://www.ni.com/it-it/support/downloads/drivers/download.ni-linux-device-drivers.html#349660 (Downloaded in /Online/files)
+### A Setup NI-VISA 18.2 2018  
+    Download NI 2018 from [ni.com](https://www.ni.com/it-it/support/downloads/drivers/download.ni-linux-device-drivers.html#349660) (Downloaded in /Online/files)
+	
 	
 	1) `sudo yum install rpm_RHEL7CentOS7.rpm`
 	2) `sudo yum install ni-visa`
 	3) `sudo dkms autoinstall`
 	4) reboot your OS
 
-## Test scope
+### B Test scope
 
 	5) `sudo rmmod usbtmc`
 	6) `sudo NIvisaic` 
 	7) "USB0::0xXXXX::0xXXXX::DSXXXXXXXXXXXX" should appear in the NIvisaic window
 
-## Install PyVISA and other software
+### C Install PyVISA and other software
 
 	8) `sudo yum install python3 -y`
 	9) `sudo yum install python3-tk* -y`
@@ -41,7 +42,7 @@ The offline setup only works with CentOS 7.
 	12) `sudo pip3 install pyusb`
 	13) `sudo pip3 install scipy numpy`
 
-## Start PyDSA
+### D Start PyDSA
 	
 	14) `sudo rmmod usbtmc` (execute at every scope usb replug)
 	15) `sudo python3 PyDSA.py`
