@@ -13,7 +13,7 @@ Supported devices: Rigol DS1054Z (tested)
 
 This repo contains tested instruction to setup PyDSA on CentOS 7.
 It also includes offline packets to install everything needed without network support.
-25/04/2021
+Tested 25/04/2021.
 
 # Requirements
 Download CentOS 7 DVD image (CentOS-7-x86_64-DVD-2009) from the official [repository](http://isoredirect.centos.org/centos/7/isos/x86_64/).
