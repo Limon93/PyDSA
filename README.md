@@ -1,13 +1,12 @@
+# Info
 Online and Offline installation files for PyDSA on Linux CentOS 7.
 
 Supported devices: Rigol DS1054Z (tested)
 
-
-#Info
 This repo contains tested instruction to setup PyDSA on CentOS 7.
 It also includes offline packets to install everything needed without network support.
 
-#Requirements
+# Requirements
 Download CentOS 7 DVD image (CentOS-7-x86_64-DVD-2009) from the official [repository](http://isoredirect.centos.org/centos/7/isos/x86_64/).
 Tested both physical and virtual machine setup (virtual on VMware Workstation 16).
 During the distro installation enable Gnome desktop environment with extra as in pictureS:
@@ -18,7 +17,7 @@ Now you have to choose between Online and Offline setup.
 I've included offline setup for to avoid any compatibility issue and ensure a fully working setup following a finite number of steps that does not change over time.
 The offline setup only works with CentOS 7.
 
-#Online Setup
+# Online Setup
 A) Setup NI-VISA 18.2 2018  
 
 	1) Download NI 2018 from https://www.ni.com/it-it/support/downloads/drivers/download.ni-linux-device-drivers.html#349660 (Downloaded in /Online/files)
@@ -48,7 +47,7 @@ D) Start PyDSA
 	16) `sudo python3 PyDSA.py`
 
 
-#Offline Setup
+# Offline Setup
 A) Install NI-VISA and enable kernel modules
 
 	1) `cd` into /rpm folder
@@ -78,10 +77,10 @@ D) Start PyDSA
 	16) `sudo python3 PyDSA.py`
 
 
-#Tips
+# Tips
 If you got a small screen to display full PyDSA window you have to change gnome font scaling factor in Applications -> Accessories -> Tweaks -> Fonts -> Scaling Factor
 
-#Thanks
+# Thanks
 Many thanks to rheslip, ppmkm and Errmy for the original work.
 
 
