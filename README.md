@@ -30,61 +30,61 @@ The offline setup only works with CentOS 7.
 ### A - Setup NI-VISA 18.2 2018  
 Download NI-VISA 2018 repository installer from [ni.com](https://www.ni.com/it-it/support/downloads/drivers/download.ni-linux-device-drivers.html#349660), (Downloaded in /Online/files)
 	
-	1) `sudo yum install rpm_RHEL7CentOS7.rpm`
-	2) `sudo yum install ni-visa`
-	3) `sudo dkms autoinstall`
-	4) reboot your OS
+1) `sudo yum install rpm_RHEL7CentOS7.rpm`
+2) `sudo yum install ni-visa`
+3) `sudo dkms autoinstall`
+4) reboot your OS
 	
 
 ### B - Test scope
 
-	5) `sudo rmmod usbtmc`
-	6) `sudo NIvisaic` 
-	7) "USB0::0xXXXX::0xXXXX::DSXXXXXXXXXXXX" should appear in the NIvisaic window
+5) `sudo rmmod usbtmc`
+6) `sudo NIvisaic` 
+7) "USB0::0xXXXX::0xXXXX::DSXXXXXXXXXXXX" should appear in the NIvisaic window
 
 ### C - Install PyVISA and other software
 
-	8) `sudo yum install python3 -y`
-	9) `sudo yum install python3-tk* -y`
-	10) `sudo pip3 install pyvisa==1.10.1`
-	11) `sudo pip3 install pyvisa-py==0.4.1`
-	12) `sudo pip3 install pyusb`
-	13) `sudo pip3 install scipy numpy`
+8) `sudo yum install python3 -y`
+9) `sudo yum install python3-tk* -y`
+10) `sudo pip3 install pyvisa==1.10.1`
+11) `sudo pip3 install pyvisa-py==0.4.1`
+12) `sudo pip3 install pyusb`
+13) `sudo pip3 install scipy numpy`
 
 ### D - Start PyDSA
 	
-	14) `sudo rmmod usbtmc` (execute at every scope usb replug)
-	15) `sudo python3 PyDSA.py`
+14) `sudo rmmod usbtmc` (execute at every scope usb replug)
+15) `sudo python3 PyDSA.py`
 
 
 # Offline Setup
 ### A - Install NI-VISA 18.2 2018
 
-	1) `cd` into /rpm folder
-	2) `sudo yum install *.rpm`
-	3) `sudo dkms autoinstall`
-	4) reboot
+1) `cd` into /rpm folder
+2) `sudo yum install *.rpm`
+3) `sudo dkms autoinstall`
+4) reboot
 
 ### B - Test scope
 
-	6) `sudo rmmod usbtmc`
-	7) `sudo NIvisaic`
-	8) "USB0::0xXXXX::0xXXXX::DSXXXXXXXXXXXX" should appear in the NIvisaic window
+6) `sudo rmmod usbtmc`
+7) `sudo NIvisaic`
+8) "USB0::0xXXXX::0xXXXX::DSXXXXXXXXXXXX" should appear in the NIvisaic window
 
 ### C - Install PyVISA and other software
 
-	5) open terminal in /pip/setuptools folder
-	6) `sudo pip3 install *.whl`
-	7) unzip the archive /pip/src/PyVISA-1.10.1.tar.gz 
-	8) `cd` into extracted /PyVISA-1.10.1
-	9) `sudo python3 setup.py install`
-	10) `cd` into /pip/whl
-	11) `sudo pip3 install *.whl`
+5) open terminal in /pip/setuptools folder
+6) `sudo pip3 install *.whl`
+7) unzip the archive /pip/src/PyVISA-1.10.1.tar.gz 
+8) `cd` into extracted /PyVISA-1.10.1
+9) `sudo python3 setup.py install`
+10) `cd` into /pip/whl
+11) `sudo pip3 install *.whl`
 
 ### D - Start PyDSA
 
-	15) `sudo rmmod usbtmc` (execute at every scope usb replug)
-	16) `sudo python3 PyDSA.py`
+15) `sudo rmmod usbtmc` (execute at every scope usb replug)
+16) `sudo python3 PyDSA.py`
 
 
 # Tips
