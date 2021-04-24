@@ -60,7 +60,7 @@ Download, extract and install NI-VISA 2018 repository installer from [ni.com](ht
 # Offline Setup
 ### A - Install NI-VISA 18.2 2018
 
-1) `cd` into /Offline_Setup/rpm folder
+1) `cd` into /Offline_Setup/rpm/
 2) `sudo yum install *.rpm`
 3) `sudo dkms autoinstall`
 4) reboot
@@ -73,7 +73,7 @@ Download, extract and install NI-VISA 2018 repository installer from [ni.com](ht
 
 ### C - Install PyVISA and other software
 
-5) open terminal in /Offline_Setup/pip/setuptools folder
+5) open terminal in /Offline_Setup/pip/setuptools/
 6) `sudo pip3 install *.whl`
 7) unzip the archive /Offline_Setup/pip/src/PyVISA-1.10.1.tar.gz 
 8) `cd` into extracted /PyVISA-1.10.1
