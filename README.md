@@ -48,20 +48,20 @@ The offline setup only works with CentOS 7.
 
 
 # Offline Setup
-## Install NI-VISA and enable kernel modules
+### A - Install NI-VISA and enable kernel modules
 
 	1) `cd` into /rpm folder
 	2) `sudo yum install *.rpm`
 	3) `sudo dkms autoinstall`
 	4) reboot
 
-## Test scope
+### B - Test scope
 
 	6) `sudo rmmod usbtmc`
 	7) `sudo NIvisaic`
 	8) "USB0::0xXXXX::0xXXXX::DSXXXXXXXXXXXX" should appear in the NIvisaic window
 
-## Install PyVISA and other software
+### C - Install PyVISA and other software
 
 	5) open terminal in /pip/setuptools folder
 	6) `sudo pip3 install *.whl`
@@ -71,7 +71,7 @@ The offline setup only works with CentOS 7.
 	10) `cd` into /pip/whl
 	11) `sudo pip3 install *.whl`
 
-## Start PyDSA
+### D - Start PyDSA
 
 	15) `sudo rmmod usbtmc` (execute at every scope usb replug)
 	16) `sudo python3 PyDSA.py`
