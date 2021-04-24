@@ -28,7 +28,7 @@ The offline setup only works with CentOS 7.
 # Online Setup
 ### A - Setup NI-VISA 18.2 2018  
     Download NI 2018 from ![ni.com](https://www.ni.com/it-it/support/downloads/drivers/download.ni-linux-device-drivers.html#349660):
-	
+## .
 	
 	1) `sudo yum install rpm_RHEL7CentOS7.rpm`
 	2) `sudo yum install ni-visa`
