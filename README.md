@@ -1,8 +1,8 @@
 ## Table of contents
 * [General info](#Info)
 * [Requirements](#Requirements)
-* [Online Setup](#Online Setup)
-* [Offline Setup](#offline Setup)
+* [Online Setup](#Online)
+* [Offline Setup](#Offline)
 * [Tips](#Tips)
 * [Thanks](#Thanks)
 
