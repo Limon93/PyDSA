@@ -1,25 +1,91 @@
-DS1054Z specific version of Spectrum Analyzer for the Rigol DS1000 series digital scopes
+Online and Offline installation files for PyDSA on Linux CentOS 7.
 
-First and foremost many thanks to rheslip and ppmkm for the original work.
+Supported devices: Rigol DS1054Z (tested)
 
-Changes to rheslip's and ppmkm's version: 
 
-1. PyVISA version 1.10.1
-2. Tested under Linux (Mint).
-3. pyvisa-py used.
-4. python3 used.
+#Info
+This repo contains tested instruction to setup PyDSA on CentOS 7.
+It also includes offline packets to install everything needed without network support.
 
-Installation instructions for Linux  (2021-03-15):
+#Requirements
+Download CentOS 7 DVD image (CentOS-7-x86_64-DVD-2009) from the official [repository](http://isoredirect.centos.org/centos/7/isos/x86_64/).
+Tested both physical and virtual machine setup (virtual on VMware Workstation 16).
+During the distro installation enable Gnome desktop environment with extra as in pictureS:
+![CentOS software options](https://github.com/limon93/PyDSA/CentOS_setup_1of2.png)
+![CentOS selection](https://github.com/limon93/PyDSA/CentOS_setup_2of2.png)
 
-1. Install following software:
-    - pyvisa (pip)
-    - pyvisa-py (pip)
-    - pyusb (pip)
-    - numpy (pip)
-    - scipy (pip)
-    - tkinter (sudo apt install python-tk)
-    
-    
-       
-Original README.md by rheslip is in ORIGREADME.md and edited by ppmkm is in README_ppmkm.md
+Now you have to choose between Online and Offline setup.
+I've included offline setup for to avoid any compatibility issue and ensure a fully working setup following a finite number of steps that does not change over time.
+The offline setup only works with CentOS 7.
+
+#Online Setup
+A) Setup NI-VISA 18.2 2018  
+
+	1) Download NI 2018 from https://www.ni.com/it-it/support/downloads/drivers/download.ni-linux-device-drivers.html#349660 (Downloaded in /Online/files)
+	2) `sudo yum install rpm_RHEL7CentOS7.rpm`
+	3) `sudo yum install ni-visa`
+	4) `sudo dkms autoinstall`
+	5) reboot
+
+B) Test scope
+
+	6) `sudo rmmod usbtmc`
+	7) `sudo NIvisaic` 
+	8) "USB0::0xXXXX::0xXXXX::DSXXXXXXXXXXXX" should appear in the NIvisaic window
+
+C) Install PyVISA and other software
+
+	9) `sudo yum install python3 -y`
+	10) `sudo yum install python3-tk* -y`
+	11) `sudo pip3 install pyvisa==1.10.1`
+	12) `sudo pip3 install pyvisa-py==0.4.1`
+	13) `sudo pip3 install pyusb`
+	14) `sudo pip3 install scipy numpy`
+
+D) Start PyDSA
+	
+	15) `sudo rmmod usbtmc` (execute at every scope usb replug)
+	16) `sudo python3 PyDSA.py`
+
+
+#Offline Setup
+A) Install NI-VISA and enable kernel modules
+
+	1) `cd` into /rpm folder
+	2) `sudo yum install *.rpm`
+	3) `sudo dkms autoinstall`
+	4) reboot
+
+B) Test scope
+
+	6) `sudo rmmod usbtmc`
+	7) `sudo NIvisaic`
+	8) "USB0::0xXXXX::0xXXXX::DSXXXXXXXXXXXX" should appear in the NIvisaic window
+
+C) Install PyVISA and other software
+
+	5) open terminal in /pip/setuptools folder
+	6) `sudo pip3 install *.whl`
+	7) unzip the archive /pip/src/PyVISA-1.10.1.tar.gz 
+	8) `cd` into extracted /PyVISA-1.10.1
+	9) `sudo python3 setup.py install`
+	10) `cd` into /pip/whl
+	11) `sudo pip3 install *.whl`
+
+D) Start PyDSA
+
+	15) `sudo rmmod usbtmc` (execute at every scope usb replug)
+	16) `sudo python3 PyDSA.py`
+
+
+#Tips
+If you got a small screen to display full PyDSA window you have to change gnome font scaling factor in Applications -> Accessories -> Tweaks -> Fonts -> Scaling Factor
+
+#Thanks
+Many thanks to rheslip, ppmkm and Errmy for the original work.
+
+
+
+
+
 
