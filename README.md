@@ -11,8 +11,8 @@ It also includes offline packets to install everything needed without network su
 Download CentOS 7 DVD image (CentOS-7-x86_64-DVD-2009) from the official [repository](http://isoredirect.centos.org/centos/7/isos/x86_64/).
 Tested both physical and virtual machine setup (virtual on VMware Workstation 16).
 During the distro installation enable Gnome desktop environment with extra as in pictureS:
-![CentOS software options](https://github.com/limon93/PyDSA/CentOS_setup_1of2.png)
-![CentOS selection](https://github.com/limon93/PyDSA/CentOS_setup_2of2.png)
+![CentOS software options](https://github.com/Limon93/PyDSA/blob/master/CentOS_setup_1of2.png)
+![CentOS selection](https://github.com/Limon93/PyDSA/blob/master/CentOS_setup_2of2.png)
 
 Now you have to choose between Online and Offline setup.
 I've included offline setup for to avoid any compatibility issue and ensure a fully working setup following a finite number of steps that does not change over time.
