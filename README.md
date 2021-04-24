@@ -28,7 +28,7 @@ The offline setup only works with CentOS 7.
 
 # Online Setup
 ### A - Setup NI-VISA 18.2 2018  
-Download, extract and install NI-VISA 2018 repository installer from [ni.com](https://www.ni.com/it-it/support/downloads/drivers/download.ni-linux-device-drivers.html#349660), (Downloaded in /Online_Setup/files)
+Download, extract and install NI-VISA 2018 repository installer from [ni.com](https://www.ni.com/it-it/support/downloads/drivers/download.ni-linux-device-drivers.html#349660), (Downloaded in /Online_Setup/files/)
 	
 1) `sudo yum install rpm_RHEL7CentOS7.rpm`
 2) `sudo yum install ni-visa`
@@ -78,7 +78,7 @@ Download, extract and install NI-VISA 2018 repository installer from [ni.com](ht
 7) unzip the archive /Offline_Setup/pip/src/PyVISA-1.10.1.tar.gz 
 8) `cd` into extracted /PyVISA-1.10.1
 9) `sudo python3 setup.py install`
-10) `cd` into /Offline_Setup/pip/whl
+10) `cd` into /Offline_Setup/pip/whl/
 11) `sudo pip3 install *.whl`
 
 Latest PyVISA crashes PyDSA.
