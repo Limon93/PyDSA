@@ -1,4 +1,4 @@
-## Table of contents
+# Table of contents
 * [General info](#Info)
 * [Requirements](#Requirements)
 * [Online Setup](#Online-Setup)
@@ -22,7 +22,7 @@ During the distro installation enable Gnome desktop environment with extra as in
 ![CentOS selection](https://github.com/Limon93/PyDSA/blob/master/CentOS_setup_2of2.png)
 
 Now you have to choose between Online and Offline setup.
-I've included offline setup for to avoid any compatibility issue and ensure a fully working setup following a finite number of steps that does not change over time.
+I've included offline setup to avoid any compatibility issue and ensure a fully working setup following a finite number of steps that does not change over time.
 The offline setup only works with CentOS 7.
 
 # Online Setup
