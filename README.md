@@ -13,6 +13,7 @@ Supported devices: Rigol DS1054Z (tested)
 
 This repo contains tested instruction to setup PyDSA on CentOS 7.
 It also includes offline packets to install everything needed without network support.
+25/04/2021
 
 # Requirements
 Download CentOS 7 DVD image (CentOS-7-x86_64-DVD-2009) from the official [repository](http://isoredirect.centos.org/centos/7/isos/x86_64/).
@@ -27,8 +28,7 @@ The offline setup only works with CentOS 7.
 
 # Online Setup
 ### A - Setup NI-VISA 18.2 2018  
-    Download NI 2018 from ![ni.com](https://www.ni.com/it-it/support/downloads/drivers/download.ni-linux-device-drivers.html#349660):
-## .
+Download NI-VISA 2018 repository installer from [ni.com](https://www.ni.com/it-it/support/downloads/drivers/download.ni-linux-device-drivers.html#349660), (Downloaded in /Online/files)
 	
 	1) `sudo yum install rpm_RHEL7CentOS7.rpm`
 	2) `sudo yum install ni-visa`
