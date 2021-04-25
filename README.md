@@ -33,7 +33,7 @@ The offline setup only works with CentOS 7.
 ### A - Setup NI-VISA 18.2 2018  
 Download, extract and install NI-VISA 2018 repository installer from [ni.com](https://www.ni.com/it-it/support/downloads/drivers/download.ni-linux-device-drivers.html#349660), (Downloaded in /Online_Setup/files/)
 
-1) `cd` into /Online_Setup/files/ 	
+1) `cd` into Online_Setup/files/ 	
 2) `sudo yum install rpm_RHEL7CentOS7.rpm`
 3) `sudo yum install ni-visa`
 4) `sudo dkms autoinstall`
@@ -77,7 +77,7 @@ Alternatively you can follow the steps below to manually install everything:
 
 ### A - Install NI-VISA 18.2 2018
 
-1) `cd` into /Offline_Setup/rpm/
+1) `cd` into Offline_Setup/rpm/
 2) `sudo yum install *.rpm`
 3) `sudo dkms autoinstall`
 4) reboot
@@ -90,12 +90,12 @@ Alternatively you can follow the steps below to manually install everything:
 
 ### C - Install PyVISA and other software
 
-5) open terminal in /Offline_Setup/pip/setuptools/
+5) open terminal in Offline_Setup/pip/setuptools/
 6) `sudo pip3 install *.whl`
-7) unzip the archive /Offline_Setup/pip/src/PyVISA-1.10.1.tar.gz 
-8) `cd` into extracted /PyVISA-1.10.1
+7) unzip the archive Offline_Setup/pip/src/PyVISA-1.10.1.tar.gz 
+8) `cd` into extracted PyVISA-1.10.1
 9) `sudo python3 setup.py install`
-10) `cd` into /Offline_Setup/pip/whl/
+10) `cd` into Offline_Setup/pip/whl/
 11) `sudo pip3 install *.whl`
 12) `echo 'blacklist usbtmc' | sudo tee -a /etc/modprobe.d/local-blacklist.conf`
 
