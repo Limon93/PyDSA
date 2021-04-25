@@ -7,9 +7,9 @@
 * [Thanks](#Thanks)
 
 # Info
-Online and Offline installation files for PyDSA Spectrum Analyzer on a fresh Linux CentOS 7 installation.\
+Online and Offline installation files for PyDSA Spectrum Analyzer on a fresh Linux CentOS 7 installation.
 
-Supported devices: Rigol DS1054Z (tested)\
+Supported devices: Rigol DS1054Z (tested)
 
 This repo contains tested instructions and an automated script to setup PyDSA on CentOS 7.\
 It also includes offline packets to install everything needed without network support.\
@@ -23,11 +23,11 @@ During the distro installation enable Gnome desktop environment with extra as in
 ![CentOS selection](https://github.com/Limon93/PyDSA/blob/master/CentOS_setup_2of2.png)
 Remeber to give administrative rights to the user you created.\
 If you forgot: from terminal acquire root permissions with `su` and execute `usermod -aG wheel YOURUSERNAME` to add YOURUSERNAME to the sudoers file.\
-Download the entire content of this repo somewere on the desktop of your CentOS installation. Unzip and open a terminal inside.\
+Download the entire content of this repo somewere on the desktop of your CentOS installation. Unzip and open a terminal inside.
 
 Now you have to choose between Online and Offline setup.\
 I've included offline setup to avoid any compatibility issue and ensure a fully working setup following a finite number of steps that does not change over time.
-The offline setup only works with CentOS 7.\
+The offline setup only works with CentOS 7.
 
 # Online Setup
 ### A - Setup NI-VISA 18.2 2018  
