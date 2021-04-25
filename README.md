@@ -99,7 +99,6 @@ Alternatively you can follow the steps below to manually install everything:
 11) `sudo pip3 install *.whl`
 12) `echo 'blacklist usbtmc' | sudo tee -a /etc/modprobe.d/local-blacklist.conf`
 
-Latest PyVISA crashes PyDSA.
 
 ### D - Start PyDSA
 
@@ -108,6 +107,7 @@ Latest PyVISA crashes PyDSA.
 
 # Tips
 If you got a small screen to display full PyDSA window you have to change gnome font scaling factor in Applications -> Accessories -> Tweaks -> Fonts -> Scaling Factor
+Latest PyVISA crashes PyDSA.
 
 # Thanks
 Many thanks to rheslip, ppmkm and Errmy for the original work.
